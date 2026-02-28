@@ -1,0 +1,93 @@
+openapi: 3.0.3
+info:
+  title: Tourist Hub API
+  version: 0.1.0
+  description: Initial API contract for multi-tenant marketplace services.
+servers:
+  - url: https://api.example.com/api/v1
+paths:
+  /public/listings:
+    get:
+      summary: Browse marketplace listings
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [tour, utility]
+        - in: query
+          name: destination
+          schema:
+            type: string
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Listing results
+  /public/listings/{slug}:
+    get:
+      summary: Get listing details
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listing details
+        '404':
+          description: Not found
+  /client/bookings:
+    post:
+      summary: Create booking
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Booking created
+  /client/bookings/{bookingId}/pay:
+    post:
+      summary: Create payment intent for booking
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payment intent created
+  /vendor/listings:
+    post:
+      summary: Create tenant-scoped listing
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Listing created
+  /admin/vendors/{tenantId}/approve:
+    post:
+      summary: Approve vendor onboarding
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tenantId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vendor approved
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

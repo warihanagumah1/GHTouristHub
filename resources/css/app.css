@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --color-primary: #210d41;
+        --color-secondary: #FF5C00;
+        --color-tertiary: #7899cf;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    .fc-btn {
+        @apply inline-flex items-center justify-center rounded-md border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .fc-btn-primary {
+        @apply border-primary bg-primary text-white hover:opacity-90 focus:ring-tertiary active:opacity-95;
+    }
+
+    .fc-btn-secondary {
+        @apply border-secondary bg-secondary text-white hover:opacity-90 focus:ring-secondary active:opacity-95;
+    }
+
+    .fc-btn-danger {
+        @apply border-secondary bg-secondary text-white hover:opacity-90 focus:ring-secondary active:opacity-95;
+    }
+
+    .fc-btn-tertiary {
+        @apply border-tertiary bg-tertiary text-primary hover:brightness-95 focus:ring-tertiary active:brightness-90;
+    }
+
+    .fc-btn-outline {
+        @apply border-primary bg-white text-primary hover:bg-primary/5 focus:ring-tertiary active:bg-primary/10;
+    }
+
+    .fc-btn-ghost {
+        @apply border-transparent bg-transparent text-primary hover:bg-primary/10 focus:ring-tertiary;
+    }
+
+    .fc-input {
+        @apply w-full rounded-md border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-tertiary focus:ring-tertiary;
+    }
+
+    .fc-select {
+        @apply fc-input pe-10;
+    }
+
+    .fc-textarea {
+        @apply fc-input min-h-28;
+    }
+
+    .fc-checkbox {
+        @apply rounded border-slate-300 text-primary shadow-sm focus:ring-tertiary;
+    }
+
+    .fc-radio {
+        @apply border-slate-300 text-primary shadow-sm focus:ring-tertiary;
+    }
+
+    .fc-label {
+        @apply block text-sm font-medium text-primary;
+    }
+
+    .fc-link {
+        @apply underline text-sm text-primary/80 hover:text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-tertiary focus:ring-offset-2;
+    }
+
+    .fc-card {
+        @apply rounded-xl border border-slate-200 bg-white p-6 shadow-sm;
+    }
+
+    .fc-badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+    }
+
+    .fc-badge-primary {
+        @apply bg-primary/10 text-primary;
+    }
+
+    .fc-badge-secondary {
+        @apply bg-secondary/10 text-secondary;
+    }
+
+    .fc-badge-tertiary {
+        @apply bg-tertiary/20 text-primary;
+    }
+
+    .fc-alert {
+        @apply rounded-lg border p-4 text-sm;
+    }
+
+    .fc-alert-info {
+        @apply border-tertiary/40 bg-tertiary/10 text-primary;
+    }
+
+    .fc-alert-success {
+        @apply border-emerald-300 bg-emerald-50 text-emerald-800;
+    }
+
+    .fc-alert-warning {
+        @apply border-amber-300 bg-amber-50 text-amber-800;
+    }
+
+    .fc-alert-danger {
+        @apply border-secondary/40 bg-secondary/10 text-secondary;
+    }
+}
