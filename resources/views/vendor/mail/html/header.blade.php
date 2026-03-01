@@ -29,7 +29,6 @@
 <a href="{{ $homeUrl }}" class="brand-link" style="display: inline-block;">
 <img src="{{ $logoSrc }}" class="logo" alt="{{ $appName }} logo">
 </a>
-<p class="brand-name">{{ $appName }}</p>
 <p class="brand-tagline">Discover. Book. Travel confidently.</p>
 </td>
 </tr>

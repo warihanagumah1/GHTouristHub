@@ -10,13 +10,10 @@
         $statusLabels = collect($bookingsByStatus->keys())->map(fn ($status) => ucfirst(str_replace('_', ' ', $status)))->values();
         $statusValues = collect($bookingsByStatus->values())->values();
         $statusPalette = collect($bookingsByStatus->keys())->map(fn ($status) => $statusColors[$status] ?? '#7899cf')->values();
-
-        $monthlyLabels = $monthlyUsers->map(fn ($bucket) => substr((string) $bucket->bucket, 2))->values();
-        $monthlyValues = $monthlyUsers->map(fn ($bucket) => (int) $bucket->total)->values();
     @endphp
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-primary leading-tight">Admin • Analytics</h2>
+        <h2 class="font-semibold text-xl text-primary leading-tight">{{ $tenant->name }} • Analytics</h2>
     </x-slot>
 
     <div class="py-12">
@@ -26,7 +23,7 @@
             @endif
 
             <x-card title="Analytics Filters">
-                <form method="GET" class="grid gap-3 md:grid-cols-6">
+                <form method="GET" class="grid gap-3 md:grid-cols-5">
                     <div>
                         <x-input-label for="date_from" value="From" />
                         <x-text-input id="date_from" name="date_from" type="date" class="mt-1" :value="$filters['date_from']" />
@@ -52,15 +49,6 @@
                             <option value="utility" @selected($filters['type'] === 'utility')>Utility</option>
                         </x-select-input>
                     </div>
-                    <div>
-                        <x-input-label for="tenant_id" value="Vendor" />
-                        <x-select-input id="tenant_id" name="tenant_id" class="mt-1">
-                            <option value="">All Vendors</option>
-                            @foreach ($tenants as $tenant)
-                                <option value="{{ $tenant->id }}" @selected($filters['tenant_id'] === (string) $tenant->id)>{{ $tenant->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                    </div>
                     <div class="flex items-end">
                         <x-button type="submit" variant="secondary" class="w-full">Apply</x-button>
                     </div>
@@ -68,30 +56,30 @@
             </x-card>
 
             <div class="grid gap-4 md:grid-cols-4">
-                <x-stat-card label="GMV (USD)" :value="'$'.number_format((float) $gmvUsd30d, 2)" />
+                <x-stat-card label="Revenue (USD)" :value="'$'.number_format((float) $gmvUsd, 2)" />
                 <x-stat-card label="Bookings (Filtered)" :value="$dailyTrend->sum('bookings')" />
-                <x-stat-card label="Top Destinations Tracked" :value="$topDestinations->count()" />
-                <x-stat-card label="Top Vendors Tracked" :value="$topVendors->count()" />
+                <x-stat-card label="Paid / Confirmed / Completed" :value="$bookingsByStatus['paid'] + $bookingsByStatus['confirmed'] + $bookingsByStatus['completed']" />
+                <x-stat-card label="Top Listings Tracked" :value="$topListings->count()" />
             </div>
 
             <div class="grid gap-6 lg:grid-cols-2">
                 <x-card title="Bookings Trend">
-                    <div class="relative h-64 w-full rounded-xl border border-slate-200 bg-gradient-to-br from-[#eff6ff] via-white to-[#fee2e2] p-2">
-                        <canvas id="adminBookingsTrendChart" class="h-full w-full"></canvas>
+                    <div class="relative h-64 w-full rounded-xl border border-slate-200 bg-gradient-to-br from-[#eff6ff] via-white to-[#ffe9dd] p-2">
+                        <canvas id="vendorBookingsTrendChart" class="h-full w-full"></canvas>
                     </div>
                 </x-card>
 
                 <x-card title="Revenue Trend (USD)">
                     <div class="relative h-64 w-full rounded-xl border border-slate-200 bg-gradient-to-br from-[#ecfeff] via-white to-[#f5d0fe] p-2">
-                        <canvas id="adminRevenueTrendChart" class="h-full w-full"></canvas>
+                        <canvas id="vendorRevenueTrendChart" class="h-full w-full"></canvas>
                     </div>
                 </x-card>
             </div>
 
             <div class="grid gap-6 lg:grid-cols-2">
                 <x-card title="Bookings by Status">
-                    <div class="relative h-64 w-full rounded-xl border border-slate-200 bg-gradient-to-br from-[#fff7ed] via-white to-[#dcfce7] p-2">
-                        <canvas id="adminStatusChart" class="h-full w-full"></canvas>
+                    <div class="relative h-64 w-full rounded-xl border border-slate-200 bg-gradient-to-br from-[#fff7ed] via-white to-[#ecfccb] p-2">
+                        <canvas id="vendorStatusChart" class="h-full w-full"></canvas>
                     </div>
                 </x-card>
 
@@ -109,61 +97,28 @@
                 </x-card>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-2">
-                <x-card title="Top Destinations">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-slate-200 text-left text-primary/70">
-                                    <th class="py-2 pe-4">Destination</th>
-                                    <th class="py-2 pe-4">Bookings</th>
+            <x-card title="Top Listings">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-left text-primary/70">
+                                <th class="py-2 pe-4">Listing</th>
+                                <th class="py-2 pe-4">Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($topListings as $listing)
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-3 pe-4 text-primary">{{ $listing->title }}</td>
+                                    <td class="py-3 pe-4 text-primary/80">{{ $listing->bookings_count }}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($topDestinations as $item)
-                                    <tr class="border-b border-slate-100">
-                                        <td class="py-3 pe-4 text-primary">{{ $item->city }}, {{ $item->country }}</td>
-                                        <td class="py-3 pe-4 text-primary/80">{{ $item->total }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="2" class="py-6 text-center text-primary/70">No destination analytics yet.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </x-card>
-
-                <x-card title="Top Vendors">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-slate-200 text-left text-primary/70">
-                                    <th class="py-2 pe-4">Vendor</th>
-                                    <th class="py-2 pe-4">Bookings</th>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="py-6 text-center text-primary/70">No listing analytics yet.</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($topVendors as $vendor)
-                                    <tr class="border-b border-slate-100">
-                                        <td class="py-3 pe-4 text-primary">{{ $vendor->name }}</td>
-                                        <td class="py-3 pe-4 text-primary/80">{{ $vendor->bookings_count }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="2" class="py-6 text-center text-primary/70">No vendor analytics yet.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </x-card>
-            </div>
-
-            <x-card title="Monthly User Growth">
-                <div class="relative h-64 w-full rounded-xl border border-slate-200 bg-gradient-to-br from-[#f0f9ff] via-white to-[#fee2e2] p-2">
-                    <canvas id="adminUserGrowthChart" class="h-full w-full"></canvas>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </x-card>
         </div>
@@ -175,8 +130,6 @@
             const statusLabels = @json($statusLabels);
             const statusValues = @json($statusValues);
             const statusPalette = @json($statusPalette);
-            const monthlyLabels = @json($monthlyLabels);
-            const monthlyValues = @json($monthlyValues);
 
             const labels = dailyTrend.map((point) => point.date.slice(5));
             const bookingValues = dailyTrend.map((point) => Number(point.bookings));
@@ -220,7 +173,7 @@
                 const points = chartValues.map((value, index) => {
                     const x = pad.left + (graphWidth * (chartValues.length === 1 ? 0.5 : index / (chartValues.length - 1)));
                     const y = pad.top + graphHeight - (((value - minValue) / (maxValue - minValue || 1)) * graphHeight);
-                    return { x, y };
+                    return { x, y, value };
                 });
 
                 if (!points.length) {
@@ -262,14 +215,14 @@
                 });
             };
 
-            const drawHorizontalBarChart = (canvasId, chartLabels, chartValues, colors) => {
+            const drawBarChart = (canvasId, chartLabels, chartValues, colors) => {
                 const canvas = document.getElementById(canvasId);
                 if (!canvas || !chartValues.length) {
                     return;
                 }
 
                 const { ctx, width, height } = initializeCanvas(canvas);
-                const pad = { top: 20, right: 20, bottom: 24, left: 130 };
+                const pad = { top: 20, right: 20, bottom: 24, left: 120 };
                 const graphWidth = width - pad.left - pad.right;
                 const graphHeight = height - pad.top - pad.bottom;
                 const maxValue = Math.max(1, ...chartValues);
@@ -299,57 +252,15 @@
                 });
             };
 
-            const drawVerticalBarChart = (canvasId, chartLabels, chartValues, baseColor) => {
-                const canvas = document.getElementById(canvasId);
-                if (!canvas || !chartValues.length) {
-                    return;
-                }
+            drawLineChart('vendorBookingsTrendChart', labels, bookingValues, '#ef4444', 'rgba(239, 68, 68, 0.14)');
+            drawLineChart('vendorRevenueTrendChart', labels, revenueValues, '#2563eb', 'rgba(37, 99, 235, 0.14)');
+            drawBarChart('vendorStatusChart', statusLabels, statusValues, statusPalette);
 
-                const { ctx, width, height } = initializeCanvas(canvas);
-                const pad = { top: 20, right: 20, bottom: 38, left: 30 };
-                const graphWidth = width - pad.left - pad.right;
-                const graphHeight = height - pad.top - pad.bottom;
-                const maxValue = Math.max(1, ...chartValues);
-                const barWidth = graphWidth / Math.max(1, chartValues.length);
-
-                ctx.clearRect(0, 0, width, height);
-                ctx.strokeStyle = '#d4dce8';
-                for (let i = 0; i <= 4; i++) {
-                    const y = pad.top + (graphHeight / 4) * i;
-                    ctx.beginPath();
-                    ctx.moveTo(pad.left, y);
-                    ctx.lineTo(width - pad.right, y);
-                    ctx.stroke();
-                }
-
-                chartValues.forEach((value, index) => {
-                    const x = pad.left + (index * barWidth) + (barWidth * 0.15);
-                    const currentBarWidth = barWidth * 0.7;
-                    const barHeight = (value / maxValue) * graphHeight;
-                    const y = pad.top + graphHeight - barHeight;
-
-                    ctx.fillStyle = baseColor;
-                    ctx.fillRect(x, y, currentBarWidth, barHeight);
-
-                    ctx.fillStyle = '#516585';
-                    ctx.font = '11px ui-sans-serif, system-ui, -apple-system, Segoe UI';
-                    ctx.textAlign = 'center';
-                    const step = Math.max(1, Math.floor(chartLabels.length / 8));
-                    if (index % step === 0 || index === chartLabels.length - 1) {
-                        ctx.fillText(chartLabels[index], x + (currentBarWidth / 2), height - 12);
-                    }
-                });
-            };
-
-            const drawAll = () => {
-                drawLineChart('adminBookingsTrendChart', labels, bookingValues, '#f97316', 'rgba(249, 115, 22, 0.15)');
-                drawLineChart('adminRevenueTrendChart', labels, revenueValues, '#2563eb', 'rgba(37, 99, 235, 0.15)');
-                drawHorizontalBarChart('adminStatusChart', statusLabels, statusValues, statusPalette);
-                drawVerticalBarChart('adminUserGrowthChart', monthlyLabels, monthlyValues, '#8b5cf6');
-            };
-
-            drawAll();
-            window.addEventListener('resize', drawAll);
+            window.addEventListener('resize', () => {
+                drawLineChart('vendorBookingsTrendChart', labels, bookingValues, '#ef4444', 'rgba(239, 68, 68, 0.14)');
+                drawLineChart('vendorRevenueTrendChart', labels, revenueValues, '#2563eb', 'rgba(37, 99, 235, 0.14)');
+                drawBarChart('vendorStatusChart', statusLabels, statusValues, statusPalette);
+            });
         })();
     </script>
 </x-app-layout>

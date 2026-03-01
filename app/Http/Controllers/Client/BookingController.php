@@ -7,6 +7,9 @@ use App\Models\Booking;
 use App\Models\Listing;
 use App\Models\Payment;
 use App\Models\TenantReview;
+use App\Models\User;
+use App\Notifications\BookingCreatedNotification;
+use App\Notifications\BookingStatusUpdatedNotification;
 use App\Services\PayoutService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +20,7 @@ use Illuminate\Support\Str;
 class BookingController extends Controller
 {
     private const REVIEWABLE_STATUSES = ['paid', 'confirmed', 'completed'];
+    private const COMPLETABLE_STATUSES = ['paid', 'confirmed'];
 
     /**
      * Display current user's bookings.
@@ -41,11 +45,44 @@ class BookingController extends Controller
     {
         abort_unless($booking->user_id === request()->user()->id, 403);
 
-        $booking->load(['listing.media', 'listing.tenant.profile', 'payments', 'review']);
+        $booking->load(['listing.media', 'listing.tenant.profile', 'payments', 'review', 'messages.sender:id,name,email']);
 
         return view('client.bookings.show', [
             'booking' => $booking,
         ]);
+    }
+
+    /**
+     * Mark a paid/confirmed booking as completed by the client.
+     */
+    public function markCompleted(Request $request, Booking $booking): RedirectResponse
+    {
+        abort_unless($booking->user_id === $request->user()->id, 403);
+
+        if (! in_array((string) $booking->status, self::COMPLETABLE_STATUSES, true)) {
+            return back()->withErrors([
+                'status' => 'Only paid or confirmed bookings can be marked as completed.',
+            ]);
+        }
+
+        $booking->update([
+            'status' => 'completed',
+        ]);
+
+        $booking->loadMissing(['listing', 'tenant']);
+        $request->user()->notify(new BookingStatusUpdatedNotification(
+            $booking,
+            "Booking {$booking->booking_no} has been marked as completed."
+        ));
+
+        $this->vendorUsersForBooking($booking)
+            ->reject(fn (User $vendorUser) => (int) $vendorUser->id === (int) $request->user()->id)
+            ->each(fn (User $vendorUser) => $vendorUser->notify(new BookingStatusUpdatedNotification(
+                $booking,
+                "Client marked booking {$booking->booking_no} as completed."
+            )));
+
+        return back()->with('status', "Booking {$booking->booking_no} marked as completed.");
     }
 
     /**
@@ -129,7 +166,28 @@ class BookingController extends Controller
             'status' => 'pending',
         ]);
 
+        $booking->loadMissing(['listing', 'tenant']);
+        $request->user()->notify(new BookingCreatedNotification($booking));
+        $this->vendorUsersForBooking($booking)
+            ->reject(fn (User $vendorUser) => (int) $vendorUser->id === (int) $request->user()->id)
+            ->each(fn (User $vendorUser) => $vendorUser->notify(new BookingCreatedNotification($booking)));
+
         return redirect()->route('client.bookings.show', $booking)->with('status', 'Booking created. Continue to payment.');
+    }
+
+    /**
+     * Resolve all active vendor users who can manage this booking.
+     */
+    protected function vendorUsersForBooking(Booking $booking)
+    {
+        return User::query()
+            ->where(function ($query) use ($booking): void {
+                $query->whereHas('ownedTenants', fn ($owned) => $owned->where('tenants.id', $booking->tenant_id))
+                    ->orWhereHas('tenantMemberships', function ($memberships) use ($booking): void {
+                        $memberships->where('tenant_id', $booking->tenant_id)->where('is_active', true);
+                    });
+            })
+            ->get();
     }
 
     protected function applyNewReviewRating(Listing $listing, int $rating): void

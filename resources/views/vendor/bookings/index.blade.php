@@ -21,6 +21,7 @@
                                 <th class="py-2 pe-4">Amount</th>
                                 <th class="py-2 pe-4">Payment</th>
                                 <th class="py-2 pe-4">Update</th>
+                                <th class="py-2 pe-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -46,10 +47,16 @@
                                             <x-button type="submit" variant="outline" class="text-[10px]">Save</x-button>
                                         </form>
                                     </td>
+                                    <td class="py-3 pe-4">
+                                        <div class="flex flex-col gap-2">
+                                            <a href="{{ route('vendor.bookings.show', $booking) }}" class="fc-link">Open</a>
+                                            <a href="{{ route('vendor.bookings.invoice', $booking) }}" class="fc-link">Invoice</a>
+                                        </div>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="py-6 text-center text-primary/70">No bookings yet.</td>
+                                    <td colspan="8" class="py-6 text-center text-primary/70">No bookings yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>

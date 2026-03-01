@@ -75,7 +75,7 @@
                                             @csrf
                                             @method('PUT')
                                             <x-select-input name="status" class="w-40 text-xs">
-                                                @foreach (['draft', 'pending_review', 'published', 'paused', 'blocked'] as $status)
+                                                @foreach (['draft', 'pending_review', 'published', 'paused'] as $status)
                                                     <option value="{{ $status }}" @selected($listing->status === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                                                 @endforeach
                                             </x-select-input>
@@ -83,14 +83,26 @@
                                         </form>
                                     </td>
                                     <td class="py-3 pe-4">
-                                        <form method="POST" action="{{ route('admin.listings.block', $listing) }}">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="is_blocked" value="{{ $listing->status === 'blocked' ? 0 : 1 }}">
-                                            <x-button type="submit" :variant="$listing->status === 'blocked' ? 'secondary' : 'danger'" class="text-[10px]">
-                                                {{ $listing->status === 'blocked' ? 'Unblock' : 'Block' }}
-                                            </x-button>
-                                        </form>
+                                        @php
+                                            $shouldBlock = $listing->status !== 'blocked';
+                                            $actionLabel = $shouldBlock ? 'Block' : 'Unblock';
+                                            $dialogTitle = $shouldBlock ? 'Block Listing' : 'Unblock Listing';
+                                            $dialogMessage = $shouldBlock
+                                                ? "Block \"{$listing->title}\"? It will be hidden from customers immediately."
+                                                : "Unblock \"{$listing->title}\"? It will be moved to paused status for vendor review.";
+                                        @endphp
+                                        <x-confirm-action-form
+                                            :name="'confirm-admin-listing-block-'.$listing->id"
+                                            :action="route('admin.listings.block', $listing)"
+                                            method="PUT"
+                                            :title="$dialogTitle"
+                                            :message="$dialogMessage"
+                                            :trigger-label="$actionLabel"
+                                            :trigger-class="'fc-btn '.($shouldBlock ? 'fc-btn-danger' : 'fc-btn-secondary').' text-[10px]'"
+                                            :confirm-label="$actionLabel"
+                                        >
+                                            <input type="hidden" name="is_blocked" value="{{ $shouldBlock ? 1 : 0 }}">
+                                        </x-confirm-action-form>
                                     </td>
                                 </tr>
                             @empty

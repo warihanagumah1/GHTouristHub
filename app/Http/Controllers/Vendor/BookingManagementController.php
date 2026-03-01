@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Vendor;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Notifications\BookingStatusUpdatedNotification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,24 @@ class BookingManagementController extends Controller
         ]);
     }
 
+    public function show(Booking $booking): View
+    {
+        $tenant = request()->user()->primaryTenant();
+        abort_unless($tenant && $booking->tenant_id === $tenant->id, 403);
+
+        $booking->load([
+            'listing',
+            'user',
+            'payments',
+            'messages.sender:id,name,email',
+        ]);
+
+        return view('vendor.bookings.show', [
+            'tenant' => $tenant,
+            'booking' => $booking,
+        ]);
+    }
+
     public function updateStatus(Request $request, Booking $booking): RedirectResponse
     {
         $tenant = $request->user()->primaryTenant();
@@ -35,11 +54,34 @@ class BookingManagementController extends Controller
             'status' => ['required', 'in:pending_payment,paid,confirmed,cancelled,completed'],
         ]);
 
+        $oldStatus = (string) $booking->status;
+        $newStatus = (string) $validated['status'];
+
         $booking->update([
-            'status' => $validated['status'],
-            'paid_at' => $validated['status'] === 'paid' ? now() : $booking->paid_at,
+            'status' => $newStatus,
+            'paid_at' => $newStatus === 'paid' ? now() : $booking->paid_at,
         ]);
 
+        if ($oldStatus !== $newStatus) {
+            $booking->loadMissing(['listing', 'tenant', 'user']);
+
+            $booking->user?->notify(new BookingStatusUpdatedNotification(
+                $booking,
+                $this->clientStatusMessage($booking)
+            ));
+        }
+
         return back()->with('status', 'Booking status updated.');
+    }
+
+    protected function clientStatusMessage(Booking $booking): string
+    {
+        return match ((string) $booking->status) {
+            'confirmed' => "Your booking {$booking->booking_no} has been confirmed by the company.",
+            'completed' => "Your booking {$booking->booking_no} has been marked as completed.",
+            'cancelled' => "Your booking {$booking->booking_no} has been cancelled. Please check details or contact support.",
+            'paid' => "Payment for booking {$booking->booking_no} is confirmed.",
+            default => "Your booking {$booking->booking_no} status has been updated.",
+        };
     }
 }

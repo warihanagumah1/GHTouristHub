@@ -1,3 +1,12 @@
+@props([
+    'showBecomeVendor' => null,
+])
+
+@php
+    $authUser = auth()->user();
+    $showBecomeVendor = $showBecomeVendor ?? ! $authUser;
+@endphp
+
 <footer class="border-t border-slate-200 bg-white">
     <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-4 lg:px-8">
         <div>
@@ -26,7 +35,11 @@
             <p class="text-sm font-semibold uppercase tracking-wider text-primary/70">Contact</p>
             <a href="mailto:support@ghtouristhub.com" class="mt-3 block text-sm text-primary/75 hover:text-primary">support@ghtouristhub.com</a>
             <p class="mt-1 text-sm text-primary/75">+233 20 000 0000</p>
-            <a href="{{ route('register') }}" class="fc-btn fc-btn-secondary mt-4 w-full">Become a Vendor</a>
+            @if ($showBecomeVendor)
+                <a href="{{ route('register') }}" class="fc-btn fc-btn-secondary mt-4 w-full">Become a Vendor</a>
+            @else
+                <a href="{{ route($authUser->dashboardRoute()) }}" class="fc-btn fc-btn-outline mt-4 w-full">Go to Dashboard</a>
+            @endif
         </div>
     </div>
     <div class="border-t border-slate-100 bg-primary py-4">

@@ -181,6 +181,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(SupportTicketComment::class);
     }
 
+    public function bookingMessages(): HasMany
+    {
+        return $this->hasMany(BookingMessage::class, 'sender_user_id');
+    }
+
     /**
      * Return the primary tenant a vendor user should manage.
      */

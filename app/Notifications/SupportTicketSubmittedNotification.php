@@ -11,7 +11,10 @@ class SupportTicketSubmittedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public readonly SupportTicket $ticket)
+    public function __construct(
+        public readonly SupportTicket $ticket,
+        public readonly bool $forAdmin = false
+    )
     {
     }
 
@@ -22,11 +25,23 @@ class SupportTicketSubmittedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject("Support ticket submitted: {$this->ticket->subject}")
-            ->line('A new support ticket has been submitted.')
+            ->line($this->forAdmin
+                ? 'A new support ticket has been submitted and needs attention.'
+                : 'Your support ticket has been submitted successfully.')
             ->line("Ticket #{$this->ticket->id}")
             ->line("Subject: {$this->ticket->subject}")
-            ->line('Please review and respond from the dashboard.');
+            ->line('Priority: '.ucfirst((string) $this->ticket->priority));
+
+        if ($this->forAdmin) {
+            return $mail
+                ->line('Please review and respond from the admin dashboard.')
+                ->action('Open Ticket', route('admin.support-tickets.show', $this->ticket));
+        }
+
+        return $mail
+            ->line('Our support team will reply shortly.')
+            ->action('Open Ticket', route('support.tickets.show', $this->ticket));
     }
 }

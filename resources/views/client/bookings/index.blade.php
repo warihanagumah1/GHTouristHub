@@ -29,7 +29,10 @@
                                         <x-money :amount="$booking->total_amount" :from="$booking->currency" show-original />
                                     </td>
                                     <td class="py-3 pe-4">
-                                        <a href="{{ route('client.bookings.show', $booking) }}" class="fc-link">Open</a>
+                                        <div class="flex flex-col gap-2">
+                                            <a href="{{ route('client.bookings.show', $booking) }}" class="fc-link">Open</a>
+                                            <a href="{{ route('client.bookings.invoice', $booking) }}" class="fc-link">Invoice</a>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty

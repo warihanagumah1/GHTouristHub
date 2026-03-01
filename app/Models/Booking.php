@@ -34,6 +34,11 @@ class Booking extends Model
         ];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'booking_no';
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -57,5 +62,10 @@ class Booking extends Model
     public function review(): HasOne
     {
         return $this->hasOne(TenantReview::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(BookingMessage::class)->orderBy('created_at');
     }
 }

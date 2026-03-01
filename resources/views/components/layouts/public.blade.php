@@ -14,11 +14,15 @@
 </head>
 
 <body class="bg-slate-50 font-sans text-primary antialiased">
+    @php
+        $authUser = auth()->user();
+        $showBecomeVendor = ! $authUser;
+    @endphp
     <div class="flex min-h-screen flex-col" x-data="{ openMenu: false }">
         <header class="sticky top-0 z-40 border-b border-slate-200 bg-white">
             <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 <a href="{{ route('home') }}" class="flex items-center gap-3">
-                    <img src="{{ asset('images/logo/logo.png') }}" alt="GH Tourist Hub logo" class="h-14 w-auto" />
+                    <img src="{{ asset('images/logo/logo.png') }}" alt="GH Tourist Hub logo" class="h-12 w-auto sm:h-14" />
                     {{-- <div>
                         <p class="text-sm font-semibold leading-none text-primary">Tourist Hub</p>
                         <p class="text-xs text-primary/60">Tours and utilities marketplace</p>
@@ -32,8 +36,10 @@
                         class="text-base font-semibold {{ request()->routeIs('marketplace.tours') ? 'text-primary' : 'text-primary/70 hover:text-primary' }}">Tours</a>
                     <a href="{{ route('marketplace.utilities') }}"
                         class="text-base font-semibold {{ request()->routeIs('marketplace.utilities') ? 'text-primary' : 'text-primary/70 hover:text-primary' }}">Utilities</a>
-                    <a href="{{ route('register') }}"
-                        class="text-base font-semibold text-primary/70 hover:text-primary">Become a Vendor</a>
+                    @if ($showBecomeVendor)
+                        <a href="{{ route('register') }}"
+                            class="text-base font-semibold text-primary/70 hover:text-primary">Become a Vendor</a>
+                    @endif
                 </nav>
 
                 <div class="hidden items-center gap-3 md:flex">
@@ -70,8 +76,10 @@
                         class="block text-sm font-medium text-primary">Tours</a>
                     <a @click="openMenu=false" href="{{ route('marketplace.utilities') }}"
                         class="block text-sm font-medium text-primary">Utilities</a>
-                    <a @click="openMenu=false" href="{{ route('register') }}"
-                        class="block text-sm font-medium text-primary">Become a Vendor</a>
+                    @if ($showBecomeVendor)
+                        <a @click="openMenu=false" href="{{ route('register') }}"
+                            class="block text-sm font-medium text-primary">Become a Vendor</a>
+                    @endif
                     <div class="pt-1">
                         <x-currency-selector />
                     </div>
@@ -94,7 +102,7 @@
             {{ $slot }}
         </main>
 
-        <x-site-footer />
+        <x-site-footer :show-become-vendor="$showBecomeVendor" />
     </div>
 </body>
 

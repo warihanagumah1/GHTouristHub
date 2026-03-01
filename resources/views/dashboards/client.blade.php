@@ -63,8 +63,8 @@
                     <a href="{{ route('marketplace.tours') }}" class="fc-btn fc-btn-outline mt-4">Browse Tours</a>
                 </x-card>
                 <x-card title="Messages and invoices">
-                    <p class="text-sm text-primary/75">Messaging and downloadable invoices are in the next release.</p>
-                    <x-badge variant="tertiary" class="mt-4">Coming next</x-badge>
+                    <p class="text-sm text-primary/75">Open any booking to chat with the company and view your invoice.</p>
+                    <a href="{{ route('client.bookings.index') }}" class="fc-btn fc-btn-outline mt-4">Open Bookings</a>
                 </x-card>
             </div>
         </div>

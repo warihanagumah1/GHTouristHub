@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\ListingModerationController;
 use App\Http\Controllers\Admin\PayoutManagementController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Client\BookingController as ClientBookingController;
+use App\Http\Controllers\Client\BookingInvoiceController as ClientBookingInvoiceController;
+use App\Http\Controllers\Client\BookingMessageController as ClientBookingMessageController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Client\StripeCheckoutController;
 use App\Http\Controllers\CurrencyPreferenceController;
@@ -13,6 +15,9 @@ use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\Vendor\BookingManagementController;
+use App\Http\Controllers\Vendor\BookingInvoiceController as VendorBookingInvoiceController;
+use App\Http\Controllers\Vendor\BookingMessageController as VendorBookingMessageController;
+use App\Http\Controllers\Vendor\AnalyticsController as VendorAnalyticsController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
 use App\Http\Controllers\Vendor\ListingManagementController;
 use App\Http\Controllers\Vendor\PayoutRequestController;
@@ -36,6 +41,9 @@ Route::post('/currency/update', [CurrencyPreferenceController::class, 'update'])
 Route::post('/listings/{listing}/book', [ClientBookingController::class, 'store'])
     ->middleware(['auth', 'active_user', 'verified', 'role:client'])
     ->name('client.bookings.store');
+Route::get('/invoices/{booking}/view', [ClientBookingInvoiceController::class, 'viewViaEmail'])
+    ->middleware('signed')
+    ->name('bookings.invoice.public');
 
 Route::get('dashboard', DashboardRedirectController::class)
     ->middleware(['auth', 'active_user', 'verified'])
@@ -65,6 +73,9 @@ Route::middleware(['auth', 'active_user', 'verified'])->group(function () {
         Route::get('/dashboard', ClientDashboardController::class)->name('dashboard');
         Route::get('/bookings', [ClientBookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings/{booking}', [ClientBookingController::class, 'show'])->name('bookings.show');
+        Route::post('/bookings/{booking}/messages', [ClientBookingMessageController::class, 'store'])->name('bookings.messages.store');
+        Route::get('/bookings/{booking}/invoice', ClientBookingInvoiceController::class)->name('bookings.invoice');
+        Route::post('/bookings/{booking}/complete', [ClientBookingController::class, 'markCompleted'])->name('bookings.complete');
         Route::post('/bookings/{booking}/review', [ClientBookingController::class, 'storeReview'])->name('bookings.review.store');
         Route::post('/bookings/{booking}/checkout', [StripeCheckoutController::class, 'createSession'])->name('bookings.checkout');
         Route::get('/bookings/{booking}/stripe/success', [StripeCheckoutController::class, 'success'])->name('bookings.stripe.success');
@@ -75,6 +86,7 @@ Route::middleware(['auth', 'active_user', 'verified'])->group(function () {
         ->name('vendor.')
         ->group(function () {
             Route::get('/dashboard', VendorDashboardController::class)->name('dashboard');
+            Route::get('/analytics', VendorAnalyticsController::class)->name('analytics');
             Route::get('/listings', [ListingManagementController::class, 'index'])->name('listings.index');
             Route::get('/listings/create', [ListingManagementController::class, 'create'])->name('listings.create');
             Route::post('/listings', [ListingManagementController::class, 'store'])->name('listings.store');
@@ -83,7 +95,11 @@ Route::middleware(['auth', 'active_user', 'verified'])->group(function () {
             Route::put('/listings/{listing}/visibility', [ListingManagementController::class, 'updateVisibility'])->name('listings.visibility');
             Route::delete('/listings/{listing}', [ListingManagementController::class, 'destroy'])->name('listings.destroy');
             Route::get('/bookings', [BookingManagementController::class, 'index'])->name('bookings.index');
+            Route::get('/bookings/{booking}', [BookingManagementController::class, 'show'])->name('bookings.show');
             Route::put('/bookings/{booking}/status', [BookingManagementController::class, 'updateStatus'])->name('bookings.status');
+            Route::post('/bookings/{booking}/messages', [VendorBookingMessageController::class, 'store'])->name('bookings.messages.store');
+            Route::get('/bookings/{booking}/invoice', VendorBookingInvoiceController::class)->name('bookings.invoice');
+            Route::post('/bookings/{booking}/invoice/email', [VendorBookingInvoiceController::class, 'emailToClient'])->name('bookings.invoice.email');
             Route::get('/reviews', [ReviewManagementController::class, 'index'])->name('reviews.index');
             Route::get('/payouts', [PayoutRequestController::class, 'index'])->name('payouts.index');
             Route::post('/payouts', [PayoutRequestController::class, 'store'])->name('payouts.store');

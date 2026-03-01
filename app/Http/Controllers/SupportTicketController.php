@@ -61,9 +61,9 @@ class SupportTicketController extends Controller
 
         User::query()
             ->whereIn('user_role', [User::ROLE_ADMIN, User::ROLE_ADMIN_STAFF])
-            ->each(fn (User $admin) => $admin->notify(new SupportTicketSubmittedNotification($ticket)));
+            ->each(fn (User $admin) => $admin->notify(new SupportTicketSubmittedNotification($ticket, true)));
 
-        $user->notify(new SupportTicketSubmittedNotification($ticket));
+        $user->notify(new SupportTicketSubmittedNotification($ticket, false));
 
         return redirect()->route('support.tickets.show', $ticket)->with('status', 'Ticket submitted successfully.');
     }

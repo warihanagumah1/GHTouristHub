@@ -32,6 +32,10 @@
                     <h3 class="font-semibold text-primary">Manage Bookings</h3>
                     <p class="mt-1 text-sm text-primary/75">Confirm bookings, monitor payment status, and update completion.</p>
                 </a>
+                <a href="{{ route('vendor.analytics') }}" class="fc-card hover:border-tertiary/60">
+                    <h3 class="font-semibold text-primary">Analytics</h3>
+                    <p class="mt-1 text-sm text-primary/75">Track booking trends, revenue performance, and top listings.</p>
+                </a>
                 <a href="{{ route('vendor.reviews.index') }}" class="fc-card hover:border-tertiary/60">
                     <h3 class="font-semibold text-primary">Customer Reviews</h3>
                     <p class="mt-1 text-sm text-primary/75">See company ratings and read client feedback on your listings.</p>

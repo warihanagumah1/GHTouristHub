@@ -22,11 +22,11 @@ new #[Layout('layouts.guest')] class extends Component
     /**
      * Mount the component.
      */
-    public function mount(string $token): void
+    public function mount(string $token, string $email = ''): void
     {
         $this->token = $token;
 
-        $this->email = request()->string('email');
+        $this->email = $email !== '' ? $email : request()->string('email');
     }
 
     /**

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\User;
+use App\Notifications\BookingStatusUpdatedNotification;
 use App\Services\PayoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +38,8 @@ class StripeCheckoutController extends Controller
                 'provider_reference' => 'local-simulated',
                 'payload' => ['simulated' => true],
             ]);
+
+            $this->notifyPaidBooking($booking);
 
             return redirect()->route('client.bookings.show', $booking)->with('status', 'Payment simulated locally (Stripe secret not configured).');
         }
@@ -145,6 +149,37 @@ class StripeCheckoutController extends Controller
             'payload' => $response->json(),
         ]);
 
+        $this->notifyPaidBooking($booking);
+
         return redirect()->route('client.bookings.show', $booking)->with('status', 'Payment confirmed successfully.');
+    }
+
+    protected function notifyPaidBooking(Booking $booking): void
+    {
+        $booking->loadMissing(['listing', 'tenant', 'user']);
+
+        $booking->user?->notify(new BookingStatusUpdatedNotification(
+            $booking,
+            "Payment confirmed for booking {$booking->booking_no}."
+        ));
+
+        $this->vendorUsersForBooking($booking)
+            ->reject(fn (User $vendorUser) => (int) $vendorUser->id === (int) $booking->user_id)
+            ->each(fn (User $vendorUser) => $vendorUser->notify(new BookingStatusUpdatedNotification(
+                $booking,
+                "Payment received for booking {$booking->booking_no}."
+            )));
+    }
+
+    protected function vendorUsersForBooking(Booking $booking)
+    {
+        return User::query()
+            ->where(function ($query) use ($booking): void {
+                $query->whereHas('ownedTenants', fn ($owned) => $owned->where('tenants.id', $booking->tenant_id))
+                    ->orWhereHas('tenantMemberships', function ($memberships) use ($booking): void {
+                        $memberships->where('tenant_id', $booking->tenant_id)->where('is_active', true);
+                    });
+            })
+            ->get();
     }
 }

@@ -65,9 +65,16 @@ class SupportTicketController extends Controller
         ]);
 
         if ($oldStatus !== $newStatus) {
+            $statusMessage = match ($newStatus) {
+                'resolved' => "Your support ticket #{$supportTicket->id} has been resolved.",
+                'closed' => "Your support ticket #{$supportTicket->id} has been closed.",
+                'in_progress' => "Your support ticket #{$supportTicket->id} is now in progress.",
+                default => "Your support ticket #{$supportTicket->id} status changed to ".str_replace('_', ' ', $newStatus).'.',
+            };
+
             $supportTicket->user->notify(new SupportTicketUpdatedNotification(
                 $supportTicket,
-                "Your support ticket #{$supportTicket->id} status changed to ".str_replace('_', ' ', $newStatus).'.'
+                $statusMessage
             ));
         }
 

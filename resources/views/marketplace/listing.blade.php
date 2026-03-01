@@ -177,9 +177,43 @@
                     <div class="mt-5 space-y-2">
                         @auth
                             @if (auth()->user()->user_role === \App\Models\User::ROLE_CLIENT)
-                                <form method="POST" action="{{ route('client.bookings.store', $listing) }}">
+                                <form method="POST" action="{{ route('client.bookings.store', $listing) }}" x-data="{ quantity: {{ max(1, (int) old('travelers_count', 1)) }}, unitPrice: {{ (float) $listing->price_from }} }">
                                     @csrf
-                                    <input type="hidden" name="travelers_count" value="1">
+                                    @if ($errors->any())
+                                        <x-alert variant="danger" class="mb-3">{{ $errors->first() }}</x-alert>
+                                    @endif
+                                    <div>
+                                        <x-input-label for="travelers_count" value="Quantity" />
+                                        <x-text-input
+                                            id="travelers_count"
+                                            name="travelers_count"
+                                            type="number"
+                                            min="1"
+                                            max="50"
+                                            step="1"
+                                            x-model.number="quantity"
+                                            class="mt-1 w-full"
+                                            required
+                                        />
+                                        <p class="mt-1 text-xs text-primary/60">Enter number of travelers/tickets (1 to 50).</p>
+                                        <p class="mt-1 text-sm font-semibold text-primary">
+                                            Estimated total:
+                                            <span x-text="(Math.max(1, quantity || 1) * unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                            {{ strtoupper((string) ($listing->currency_code ?: 'USD')) }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <x-input-label for="special_requests" value="Special Requests (optional)" />
+                                        <x-textarea-input
+                                            id="special_requests"
+                                            name="special_requests"
+                                            class="mt-1"
+                                            rows="3"
+                                            maxlength="1000"
+                                            placeholder="Any date preference, pickup point, dietary notes, or accessibility needs..."
+                                        >{{ old('special_requests') }}</x-textarea-input>
+                                        <p class="mt-1 text-xs text-primary/60">Up to 1000 characters.</p>
+                                    </div>
                                     <x-button type="submit" variant="secondary" class="w-full">Start booking</x-button>
                                 </form>
                             @else

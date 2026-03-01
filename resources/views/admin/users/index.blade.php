@@ -67,19 +67,32 @@
                                         </form>
                                     </td>
                                     <td class="py-3 pe-4">
-                                        <form method="POST" action="{{ route('admin.users.block', $user) }}">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="is_blocked" value="{{ $user->is_blocked ? 0 : 1 }}">
-                                            <x-button
-                                                type="submit"
-                                                :variant="$user->is_blocked ? 'secondary' : 'danger'"
-                                                class="text-[10px]"
-                                                :disabled="auth()->id() === $user->id && ! $user->is_blocked"
-                                            >
-                                                {{ $user->is_blocked ? 'Unblock' : 'Block' }}
+                                        @if (auth()->id() === $user->id && ! $user->is_blocked)
+                                            <x-button type="button" variant="outline" class="text-[10px]" disabled>
+                                                Block
                                             </x-button>
-                                        </form>
+                                        @else
+                                            @php
+                                                $shouldBlock = ! $user->is_blocked;
+                                                $actionLabel = $shouldBlock ? 'Block' : 'Unblock';
+                                                $dialogTitle = $shouldBlock ? 'Block User Account' : 'Unblock User Account';
+                                                $dialogMessage = $shouldBlock
+                                                    ? "Block {$user->email}? They will immediately lose access until unblocked."
+                                                    : "Unblock {$user->email}? They will be able to sign in again.";
+                                            @endphp
+                                            <x-confirm-action-form
+                                                :name="'confirm-admin-user-block-'.$user->id"
+                                                :action="route('admin.users.block', $user)"
+                                                method="PUT"
+                                                :title="$dialogTitle"
+                                                :message="$dialogMessage"
+                                                :trigger-label="$actionLabel"
+                                                :trigger-class="'fc-btn '.($shouldBlock ? 'fc-btn-danger' : 'fc-btn-secondary').' text-[10px]'"
+                                                :confirm-label="$actionLabel"
+                                            >
+                                                <input type="hidden" name="is_blocked" value="{{ $shouldBlock ? 1 : 0 }}">
+                                            </x-confirm-action-form>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

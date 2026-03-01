@@ -31,7 +31,7 @@ new class extends Component
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route(auth()->user()->dashboardRoute()) }}" wire:navigate>
-                        <x-application-logo class="block h-16 w-auto fill-current text-gray-800" />
+                        <x-application-logo class="block h-12 w-auto fill-current text-gray-800 sm:h-14 lg:h-16" />
                     </a>
                 </div>
 
@@ -82,10 +82,6 @@ new class extends Component
                                 </a>
 
                                 @if ($isAdminUser)
-                                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
-                                        <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1V3zM3 12a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1v-5zM11 3a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1h-4a1 1 0 01-1-1V3z"/></svg>
-                                        <span>Admin Dashboard</span>
-                                    </a>
                                     <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
                                         <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 18a8 8 0 1116 0H2z"/></svg>
                                         <span>Users</span>
@@ -114,6 +110,10 @@ new class extends Component
                                     <a href="{{ route('vendor.bookings.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
                                         <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 2v8h12V7H4zm2 2h3v2H6V9z"/></svg>
                                         <span>Bookings</span>
+                                    </a>
+                                    <a href="{{ route('vendor.analytics') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
+                                        <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5H2v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9H8V7zM14 3a1 1 0 011-1h2a1 1 0 011 1v13h-4V3z"/></svg>
+                                        <span>Analytics</span>
                                     </a>
                                     <a href="{{ route('vendor.reviews.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
                                         <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/></svg>
@@ -148,7 +148,7 @@ new class extends Component
                             </div>
 
                             <div class="border-t border-slate-200 p-2">
-                                <button wire:click="logout" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-secondary transition hover:bg-secondary/10">
+                                <button wire:click="logout" class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-lg font-bold text-secondary transition hover:bg-secondary/10">
                                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25V6a1 1 0 11-2 0V4.25a.25.25 0 00-.25-.25h-5.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25V14a1 1 0 112 0v1.75A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25zm9.22 2.97a.75.75 0 011.06 0l2.25 2.25a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 01-1.06-1.06l.97-.97H8a.75.75 0 010-1.5h5.19l-.97-.97a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
                                     <span>Sign Out</span>
                                 </button>
@@ -219,6 +219,12 @@ new class extends Component
                     <span class="inline-flex items-center gap-2">
                         <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 2v8h12V7H4zm2 2h3v2H6V9z"/></svg>
                         <span>{{ __('Bookings') }}</span>
+                    </span>
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('vendor.analytics')" :active="request()->routeIs('vendor.analytics')" wire:navigate>
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5H2v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9H8V7zM14 3a1 1 0 011-1h2a1 1 0 011 1v13h-4V3z"/></svg>
+                        <span>{{ __('Analytics') }}</span>
                     </span>
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('vendor.reviews.index')" :active="request()->routeIs('vendor.reviews.*')" wire:navigate>
@@ -308,7 +314,7 @@ new class extends Component
                 @endif
 
                 <!-- Authentication -->
-                <button wire:click="logout" class="w-full text-start rounded-md px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/10">
+                <button wire:click="logout" class="w-full text-start rounded-md px-4 py-3 text-base font-semibold text-secondary hover:bg-secondary/10">
                     <span class="inline-flex items-center gap-2">
                         <svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25V6a1 1 0 11-2 0V4.25a.25.25 0 00-.25-.25h-5.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h5.5a.25.25 0 00.25-.25V14a1 1 0 112 0v1.75A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25zm9.22 2.97a.75.75 0 011.06 0l2.25 2.25a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 01-1.06-1.06l.97-.97H8a.75.75 0 010-1.5h5.19l-.97-.97a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
                         <span>{{ __('Sign Out') }}</span>
