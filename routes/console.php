@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Booking;
 use App\Models\Currency;
+use App\Notifications\BookingReminderNotification;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -56,4 +58,65 @@ Artisan::command('currencies:sync-rates', function () {
     return 0;
 })->purpose('Sync currency rates from ExchangeRate API');
 
+Artisan::command('bookings:send-reminders', function () {
+    $pendingCutoff = now()->subHours(6);
+    $pendingReminders = 0;
+    $upcomingReminders = 0;
+
+    Booking::query()
+        ->with(['user', 'listing'])
+        ->where('status', 'pending_payment')
+        ->whereNull('pending_payment_reminded_at')
+        ->where('created_at', '<=', $pendingCutoff)
+        ->chunkById(100, function ($bookings) use (&$pendingReminders): void {
+            foreach ($bookings as $booking) {
+                if (! $booking->user) {
+                    continue;
+                }
+
+                $booking->user->notify(new BookingReminderNotification(
+                    $booking,
+                    BookingReminderNotification::TYPE_PENDING_PAYMENT
+                ));
+
+                $booking->forceFill([
+                    'pending_payment_reminded_at' => now(),
+                ])->save();
+
+                $pendingReminders++;
+            }
+        });
+
+    $tomorrow = now()->addDay()->toDateString();
+
+    Booking::query()
+        ->with(['user', 'listing'])
+        ->whereIn('status', ['paid', 'confirmed'])
+        ->whereDate('service_date', $tomorrow)
+        ->whereNull('upcoming_service_reminded_at')
+        ->chunkById(100, function ($bookings) use (&$upcomingReminders): void {
+            foreach ($bookings as $booking) {
+                if (! $booking->user) {
+                    continue;
+                }
+
+                $booking->user->notify(new BookingReminderNotification(
+                    $booking,
+                    BookingReminderNotification::TYPE_UPCOMING_SERVICE
+                ));
+
+                $booking->forceFill([
+                    'upcoming_service_reminded_at' => now(),
+                ])->save();
+
+                $upcomingReminders++;
+            }
+        });
+
+    $this->info("Booking reminders sent. Pending payment: {$pendingReminders}; Upcoming service: {$upcomingReminders}.");
+
+    return 0;
+})->purpose('Send pending payment and upcoming service booking reminders');
+
 Schedule::command('currencies:sync-rates')->twiceDaily(0, 12);
+Schedule::command('bookings:send-reminders')->hourly();

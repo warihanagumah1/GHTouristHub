@@ -2,12 +2,24 @@
     <section class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         @php
             $listCta = null;
+            $approvalMessage = null;
             if (auth()->check()) {
-                $role = auth()->user()->user_role;
+                $user = auth()->user();
+                $role = $user->user_role;
+                $tenant = $user->isVendor() ? $user->primaryTenant() : null;
+                $isApprovedVendor = ! $user->isVendor() || (($tenant?->status ?? null) === 'approved');
                 if (in_array($role, [\App\Models\User::ROLE_UTILITY_OWNER, \App\Models\User::ROLE_UTILITY_STAFF], true)) {
-                    $listCta = ['href' => route('vendor.listings.create', ['type' => 'utility']), 'label' => 'List utility'];
+                    if ($isApprovedVendor) {
+                        $listCta = ['href' => route('vendor.listings.create', ['type' => 'utility']), 'label' => 'List utility'];
+                    } else {
+                        $approvalMessage = 'Your vendor account is awaiting admin approval before you can create listings.';
+                    }
                 } elseif (in_array($role, [\App\Models\User::ROLE_TOUR_OWNER, \App\Models\User::ROLE_TOUR_STAFF], true)) {
-                    $listCta = ['href' => route('vendor.listings.create', ['type' => 'tour']), 'label' => 'List company tour'];
+                    if ($isApprovedVendor) {
+                        $listCta = ['href' => route('vendor.listings.create', ['type' => 'tour']), 'label' => 'List company tour'];
+                    } else {
+                        $approvalMessage = 'Your vendor account is awaiting admin approval before you can create listings.';
+                    }
                 }
             }
         @endphp
@@ -20,6 +32,9 @@
                 <a href="{{ $listCta['href'] }}" class="fc-btn fc-btn-secondary">{{ $listCta['label'] }}</a>
             @endif
         </div>
+        @if ($approvalMessage)
+            <x-alert variant="warning" class="mb-4">{{ $approvalMessage }}</x-alert>
+        @endif
 
         <form method="GET" class="mb-8 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-5">
             <x-text-input name="q" :value="$filters['q']" type="text" placeholder="Search utilities..." />

@@ -19,11 +19,14 @@ class Booking extends Model
         'listing_id',
         'travelers_count',
         'special_requests',
+        'service_date',
         'total_amount',
         'currency',
         'status',
         'stripe_checkout_session_id',
         'paid_at',
+        'pending_payment_reminded_at',
+        'upcoming_service_reminded_at',
     ];
 
     protected function casts(): array
@@ -31,6 +34,9 @@ class Booking extends Model
         return [
             'total_amount' => 'decimal:2',
             'paid_at' => 'datetime',
+            'service_date' => 'date',
+            'pending_payment_reminded_at' => 'datetime',
+            'upcoming_service_reminded_at' => 'datetime',
         ];
     }
 

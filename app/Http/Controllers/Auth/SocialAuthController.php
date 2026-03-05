@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -19,13 +20,15 @@ class SocialAuthController extends Controller
     {
         $this->assertSupportedProvider($provider);
 
+        $driver = $this->socialDriver($provider);
+
         if ($provider === 'linkedin') {
-            return Socialite::driver($provider)
+            return $driver
                 ->scopes(['openid', 'profile', 'email'])
                 ->redirect();
         }
 
-        return Socialite::driver($provider)->redirect();
+        return $driver->redirect();
     }
 
     /**
@@ -35,7 +38,7 @@ class SocialAuthController extends Controller
     {
         $this->assertSupportedProvider($provider);
 
-        $socialUser = Socialite::driver($provider)->user();
+        $socialUser = $this->socialDriver($provider)->user();
 
         $email = $socialUser->getEmail();
 
@@ -88,5 +91,27 @@ class SocialAuthController extends Controller
         if (! in_array($provider, ['google', 'linkedin'], true)) {
             throw new NotFoundHttpException();
         }
+    }
+
+    /**
+     * Build provider driver using current host/scheme callback URL.
+     */
+    protected function socialDriver(string $provider): Provider
+    {
+        return Socialite::driver($provider)->redirectUrl($this->callbackUrl($provider));
+    }
+
+    /**
+     * Resolve callback URL, preferring provider config and falling back to current host/port.
+     */
+    protected function callbackUrl(string $provider): string
+    {
+        $configuredRedirect = (string) config("services.{$provider}.redirect");
+
+        if ($configuredRedirect !== '') {
+            return $configuredRedirect;
+        }
+
+        return route('social.callback', ['provider' => $provider], true);
     }
 }

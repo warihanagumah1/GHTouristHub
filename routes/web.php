@@ -13,6 +13,7 @@ use App\Http\Controllers\Client\StripeCheckoutController;
 use App\Http\Controllers\CurrencyPreferenceController;
 use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\MarketplaceController;
+use App\Http\Controllers\MarketplaceAttractionController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\Vendor\BookingManagementController;
 use App\Http\Controllers\Vendor\BookingInvoiceController as VendorBookingInvoiceController;
@@ -25,12 +26,16 @@ use App\Http\Controllers\Vendor\ProfileSiteController;
 use App\Http\Controllers\Vendor\ReviewManagementController;
 use App\Http\Controllers\Vendor\TeamManagementController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
+use App\Http\Controllers\Admin\TouristAttractionController as AdminTouristAttractionController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [MarketplaceController::class, 'home'])->name('home');
 Route::get('/tours', [MarketplaceController::class, 'tours'])->name('marketplace.tours');
 Route::get('/utilities', [MarketplaceController::class, 'utilities'])->name('marketplace.utilities');
+Route::get('/tourist-attractions', [MarketplaceAttractionController::class, 'index'])->name('marketplace.attractions.index');
+Route::get('/tourist-attractions/{regionSlug}/{attractionSlug}', [MarketplaceAttractionController::class, 'attraction'])->name('marketplace.attractions.show');
+Route::get('/tourist-attractions/{slug}', [MarketplaceAttractionController::class, 'show'])->name('marketplace.attractions.region');
 Route::get('/listings/{slug}', [MarketplaceController::class, 'listing'])->name('marketplace.listing');
 Route::get('/vendors/{slug}', [MarketplaceController::class, 'vendor'])->name('marketplace.vendor');
 Route::view('/about', 'company.about')->name('company.about');
@@ -122,6 +127,7 @@ Route::middleware(['auth', 'active_user', 'verified'])->group(function () {
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::post('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
         Route::put('/users/{user}/block', [UserManagementController::class, 'toggleBlock'])->name('users.block');
+        Route::put('/vendors/{tenant}/approval', [UserManagementController::class, 'updateVendorApproval'])->name('vendors.approval');
         Route::get('/listings', [ListingModerationController::class, 'index'])->name('listings.index');
         Route::put('/listings/{listing}/status', [ListingModerationController::class, 'updateStatus'])->name('listings.status');
         Route::put('/listings/{listing}/block', [ListingModerationController::class, 'toggleBlocked'])->name('listings.block');
@@ -133,6 +139,11 @@ Route::middleware(['auth', 'active_user', 'verified'])->group(function () {
         Route::get('/support-tickets/{supportTicket}', [AdminSupportTicketController::class, 'show'])->name('support-tickets.show');
         Route::put('/support-tickets/{supportTicket}/status', [AdminSupportTicketController::class, 'updateStatus'])->name('support-tickets.status');
         Route::post('/support-tickets/{supportTicket}/comments', [AdminSupportTicketController::class, 'storeComment'])->name('support-tickets.comments.store');
+        Route::get('/tourist-attractions', [AdminTouristAttractionController::class, 'index'])->name('attractions.index');
+        Route::post('/tourist-attractions/regions', [AdminTouristAttractionController::class, 'storeRegion'])->name('attractions.regions.store');
+        Route::put('/tourist-attractions/regions/{region}', [AdminTouristAttractionController::class, 'updateRegion'])->name('attractions.regions.update');
+        Route::post('/tourist-attractions/regions/{region}/attractions', [AdminTouristAttractionController::class, 'storeAttraction'])->name('attractions.store');
+        Route::put('/tourist-attractions/{attraction}', [AdminTouristAttractionController::class, 'updateAttraction'])->name('attractions.update');
     });
 });
 

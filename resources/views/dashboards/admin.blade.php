@@ -27,12 +27,13 @@
                 </x-card>
                 <x-card title="Operations">
                     <p class="text-sm text-primary/80">Total listings: <strong>{{ $stats['total_listings'] }}</strong></p>
-                    <div class="mt-4 grid gap-2 md:grid-cols-5">
+                    <div class="mt-4 grid gap-2 md:grid-cols-6">
                         <a href="{{ route('admin.users.index') }}" class="fc-btn fc-btn-outline text-center text-[10px]">Manage Users</a>
                         <a href="{{ route('admin.listings.index') }}" class="fc-btn fc-btn-outline text-center text-[10px]">Moderate Listings</a>
                         <a href="{{ route('admin.analytics') }}" class="fc-btn fc-btn-secondary text-center text-[10px]">Analytics</a>
                         <a href="{{ route('admin.payouts.index') }}" class="fc-btn fc-btn-outline text-center text-[10px]">Payouts</a>
                         <a href="{{ route('admin.support-tickets.index') }}" class="fc-btn fc-btn-outline text-center text-[10px]">Support Tickets</a>
+                        <a href="{{ route('admin.attractions.index') }}" class="fc-btn fc-btn-outline text-center text-[10px]">Tourist Attractions</a>
                     </div>
                 </x-card>
             </div>

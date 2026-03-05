@@ -105,6 +105,20 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if a vendor account is currently approved for listing operations.
+     */
+    public function hasApprovedVendorAccount(): bool
+    {
+        if (! $this->isVendor()) {
+            return false;
+        }
+
+        $tenant = $this->primaryTenant();
+
+        return $tenant && $tenant->status === 'approved';
+    }
+
+    /**
      * Generate and persist a one-time 2FA code for this user.
      */
     public function issueTwoFactorCode(): string

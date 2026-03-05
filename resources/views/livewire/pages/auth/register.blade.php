@@ -4,9 +4,11 @@ use App\Models\User;
 use App\Models\Tenant;
 use App\Models\TenantMember;
 use App\Models\VendorProfile;
+use App\Notifications\VendorRegistrationPendingApprovalNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
@@ -71,6 +73,15 @@ new #[Layout('layouts.guest')] class extends Component
                 'support_email' => $user->email,
                 'kyc_status' => 'draft',
             ]);
+
+            Notification::route(
+                'mail',
+                (string) config('services.support.admin_email', 'support@ghtouristhub.com')
+            )->notify(new VendorRegistrationPendingApprovalNotification($user, $tenant));
+
+            User::query()
+                ->whereIn('user_role', [User::ROLE_ADMIN, User::ROLE_ADMIN_STAFF])
+                ->each(fn (User $admin) => $admin->notify(new VendorRegistrationPendingApprovalNotification($user, $tenant)));
         }
 
         Auth::login($user);

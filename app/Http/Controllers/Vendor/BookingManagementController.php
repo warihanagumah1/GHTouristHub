@@ -57,9 +57,29 @@ class BookingManagementController extends Controller
         $oldStatus = (string) $booking->status;
         $newStatus = (string) $validated['status'];
 
+        $allowedTransitions = [
+            'pending_payment' => ['pending_payment', 'paid', 'cancelled'],
+            'paid' => ['paid', 'confirmed', 'completed', 'cancelled'],
+            'confirmed' => ['confirmed', 'completed', 'cancelled'],
+            'completed' => ['completed'],
+            'cancelled' => ['cancelled'],
+        ];
+
+        if (! in_array($newStatus, $allowedTransitions[$oldStatus] ?? [], true)) {
+            return back()->withErrors([
+                'status' => "Invalid status transition from {$oldStatus} to {$newStatus}.",
+            ]);
+        }
+
+        if (in_array($oldStatus, ['paid', 'confirmed', 'completed'], true) && $newStatus === 'pending_payment') {
+            return back()->withErrors([
+                'status' => 'Paid bookings cannot be reverted to pending payment.',
+            ]);
+        }
+
         $booking->update([
             'status' => $newStatus,
-            'paid_at' => $newStatus === 'paid' ? now() : $booking->paid_at,
+            'paid_at' => $newStatus === 'paid' && $oldStatus !== 'paid' ? now() : $booking->paid_at,
         ]);
 
         if ($oldStatus !== $newStatus) {

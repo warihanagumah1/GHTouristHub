@@ -27,6 +27,7 @@ class VendorProfile extends Model
         'about',
         'stripe_connect_account_id',
         'payout_mode',
+        'preferred_payout_details',
         'tax_id',
         'verification_document_path',
         'kyc_status',

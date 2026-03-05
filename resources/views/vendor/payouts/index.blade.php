@@ -12,14 +12,20 @@
                 <x-alert variant="danger">{{ $errors->first() }}</x-alert>
             @endif
 
-            <div class="grid gap-4 md:grid-cols-3">
+            <div class="grid gap-4 md:grid-cols-4">
                 <x-stat-card label="Available Balance (USD)" :value="'$'.number_format((float) $availableBalanceUsd, 2)" />
+                <x-stat-card label="Outstanding Requests (USD)" :value="'$'.number_format((float) $outstandingBalanceUsd, 2)" />
                 <x-stat-card label="Commission Rate" :value="$commissionPercent.'%'" />
                 <x-stat-card label="Payout Mode" :value="$tenant->profile?->payout_mode === 'connect_destination' ? 'Stripe Connect' : 'Platform Payouts'" />
             </div>
 
             <x-card title="Payout Setup">
-                <form method="POST" action="{{ route('vendor.payouts.setup') }}" class="grid gap-4 md:grid-cols-2">
+                @php
+                    $selectedManualType = old('manual_payout_type', data_get($manualPayoutSetup, 'type', ''));
+                    $mobileNetworks = ['MTN', 'Telecel', 'AirtelTigo', 'Glo', 'Other'];
+                    $selectedMobileProvider = old('manual_mobile_provider', data_get($manualPayoutSetup, 'mobile_provider'));
+                @endphp
+                <form method="POST" action="{{ route('vendor.payouts.setup') }}" class="grid gap-4 md:grid-cols-2" x-data="{ manualType: @js($selectedManualType) }">
                     @csrf
                     @method('PUT')
                     <div>
@@ -41,6 +47,104 @@
                             :value="old('stripe_connect_account_id', $tenant->profile?->stripe_connect_account_id)"
                         />
                         <p class="mt-1 text-xs text-primary/60">Required for Stripe Connect mode. Format: <code>acct_...</code></p>
+                    </div>
+                    <div class="md:col-span-2 rounded-xl border border-slate-200 p-4">
+                        <h3 class="text-sm font-semibold text-primary">Preferred Manual Payout Details</h3>
+                        <p class="mt-1 text-xs text-primary/60">These details are shown to admin when processing manual payout requests.</p>
+
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                            <div class="md:col-span-2">
+                                <x-input-label for="manual_payout_type" value="Payout Detail Type" />
+                                <x-select-input id="manual_payout_type" name="manual_payout_type" class="mt-1" x-model="manualType">
+                                    <option value="">Select type</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="mobile_money">Mobile Money</option>
+                                    <option value="paypal">PayPal</option>
+                                    <option value="other">Other</option>
+                                </x-select-input>
+                                <x-input-error :messages="$errors->get('manual_payout_type')" class="mt-1" />
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <x-input-label for="manual_account_name" value="Account Name" />
+                                <x-text-input
+                                    id="manual_account_name"
+                                    name="manual_account_name"
+                                    class="mt-1"
+                                    maxlength="255"
+                                    :value="old('manual_account_name', data_get($manualPayoutSetup, 'account_name'))"
+                                />
+                                <x-input-error :messages="$errors->get('manual_account_name')" class="mt-1" />
+                            </div>
+
+                            <div class="contents" x-cloak x-show="manualType === 'bank_transfer'">
+                                <div>
+                                    <x-input-label for="manual_bank_name" value="Bank Name" />
+                                    <x-text-input id="manual_bank_name" name="manual_bank_name" class="mt-1" maxlength="255" :value="old('manual_bank_name', data_get($manualPayoutSetup, 'bank_name'))" />
+                                    <x-input-error :messages="$errors->get('manual_bank_name')" class="mt-1" />
+                                </div>
+                                <div>
+                                    <x-input-label for="manual_bank_branch" value="Branch (optional)" />
+                                    <x-text-input id="manual_bank_branch" name="manual_bank_branch" class="mt-1" maxlength="255" :value="old('manual_bank_branch', data_get($manualPayoutSetup, 'bank_branch'))" />
+                                    <x-input-error :messages="$errors->get('manual_bank_branch')" class="mt-1" />
+                                </div>
+                                <div>
+                                    <x-input-label for="manual_bank_account_number" value="Account Number" />
+                                    <x-text-input id="manual_bank_account_number" name="manual_bank_account_number" class="mt-1" maxlength="120" :value="old('manual_bank_account_number', data_get($manualPayoutSetup, 'bank_account_number'))" />
+                                    <x-input-error :messages="$errors->get('manual_bank_account_number')" class="mt-1" />
+                                </div>
+                                <div>
+                                    <x-input-label for="manual_bank_swift_code" value="SWIFT Code (optional)" />
+                                    <x-text-input id="manual_bank_swift_code" name="manual_bank_swift_code" class="mt-1" maxlength="120" :value="old('manual_bank_swift_code', data_get($manualPayoutSetup, 'bank_swift_code'))" />
+                                    <x-input-error :messages="$errors->get('manual_bank_swift_code')" class="mt-1" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <x-input-label for="manual_bank_iban" value="IBAN (optional)" />
+                                    <x-text-input id="manual_bank_iban" name="manual_bank_iban" class="mt-1" maxlength="120" :value="old('manual_bank_iban', data_get($manualPayoutSetup, 'bank_iban'))" />
+                                    <x-input-error :messages="$errors->get('manual_bank_iban')" class="mt-1" />
+                                </div>
+                            </div>
+
+                            <div class="contents" x-cloak x-show="manualType === 'mobile_money'">
+                                <div>
+                                    <x-input-label for="manual_mobile_provider" value="Mobile Network" />
+                                    <x-select-input id="manual_mobile_provider" name="manual_mobile_provider" class="mt-1">
+                                        <option value="">Select mobile network</option>
+                                        @foreach ($mobileNetworks as $network)
+                                            <option value="{{ $network }}" @selected($selectedMobileProvider === $network)>{{ $network }}</option>
+                                        @endforeach
+                                        @if (filled($selectedMobileProvider) && ! in_array($selectedMobileProvider, $mobileNetworks, true))
+                                            <option value="{{ $selectedMobileProvider }}" selected>{{ $selectedMobileProvider }} (Saved)</option>
+                                        @endif
+                                    </x-select-input>
+                                    <x-input-error :messages="$errors->get('manual_mobile_provider')" class="mt-1" />
+                                </div>
+                                <div>
+                                    <x-input-label for="manual_mobile_number" value="Mobile Money Number" />
+                                    <x-text-input id="manual_mobile_number" name="manual_mobile_number" class="mt-1" maxlength="120" :value="old('manual_mobile_number', data_get($manualPayoutSetup, 'mobile_number'))" placeholder="+233..." />
+                                    <x-input-error :messages="$errors->get('manual_mobile_number')" class="mt-1" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <x-input-label for="manual_mobile_account_name" value="Mobile Money Account Name" />
+                                    <x-text-input id="manual_mobile_account_name" name="manual_mobile_account_name" class="mt-1" maxlength="255" :value="old('manual_mobile_account_name', data_get($manualPayoutSetup, 'mobile_account_name'))" />
+                                    <x-input-error :messages="$errors->get('manual_mobile_account_name')" class="mt-1" />
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2" x-cloak x-show="manualType === 'paypal'">
+                                <x-input-label for="manual_paypal_email" value="PayPal Email" />
+                                <x-text-input id="manual_paypal_email" name="manual_paypal_email" type="email" class="mt-1" maxlength="255" :value="old('manual_paypal_email', data_get($manualPayoutSetup, 'paypal_email'))" />
+                                <x-input-error :messages="$errors->get('manual_paypal_email')" class="mt-1" />
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <x-input-label for="manual_notes" value="Additional Notes" />
+                                <x-textarea-input id="manual_notes" name="manual_notes" class="mt-1" rows="3" maxlength="2000" placeholder="Any extra payout instructions">{{ old('manual_notes', data_get($manualPayoutSetup, 'notes')) }}</x-textarea-input>
+                                <x-input-error :messages="$errors->get('manual_notes')" class="mt-1" />
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="preferred_payout_details" value="{{ old('preferred_payout_details') }}">
                     </div>
                     <div class="md:col-span-2">
                         <x-button type="submit" variant="secondary">Save Payout Setup</x-button>

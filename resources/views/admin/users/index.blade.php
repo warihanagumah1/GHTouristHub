@@ -42,6 +42,7 @@
                                 <th class="py-2 pe-4">Email</th>
                                 <th class="py-2 pe-4">Role</th>
                                 <th class="py-2 pe-4">Account</th>
+                                <th class="py-2 pe-4">Vendor Approval</th>
                                 <th class="py-2 pe-4">Created</th>
                                 <th class="py-2 pe-4">Reset Password</th>
                                 <th class="py-2 pe-4">Block / Unblock</th>
@@ -57,6 +58,27 @@
                                         <x-badge :variant="$user->is_blocked ? 'secondary' : 'primary'">
                                             {{ $user->is_blocked ? 'Blocked' : 'Active' }}
                                         </x-badge>
+                                    </td>
+                                    <td class="py-3 pe-4">
+                                        @php
+                                            $tenant = $user->ownedTenants->first();
+                                        @endphp
+                                        @if ($tenant)
+                                            <form method="POST" action="{{ route('admin.vendors.approval', $tenant) }}" class="flex items-center gap-2">
+                                                @csrf
+                                                @method('PUT')
+                                                <x-select-input name="status" class="w-40 text-xs">
+                                                    @foreach (['pending', 'approved', 'rejected', 'suspended'] as $status)
+                                                        <option value="{{ $status }}" @selected($tenant->status === $status)>{{ ucfirst($status) }}</option>
+                                                    @endforeach
+                                                </x-select-input>
+                                                <x-button type="submit" variant="outline" class="text-[10px]">Save</x-button>
+                                            </form>
+                                        @elseif (in_array($user->user_role, [\App\Models\User::ROLE_TOUR_OWNER, \App\Models\User::ROLE_UTILITY_OWNER], true))
+                                            <span class="text-xs text-amber-700">No company profile</span>
+                                        @else
+                                            <span class="text-xs text-primary/60">Not a vendor owner</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 pe-4 text-primary/70">{{ $user->created_at->toDateString() }}</td>
                                     <td class="py-3 pe-4">
@@ -97,7 +119,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="py-6 text-center text-primary/70">No users found.</td>
+                                    <td colspan="8" class="py-6 text-center text-primary/70">No users found.</td>
                                 </tr>
                             @endforelse
                         </tbody>

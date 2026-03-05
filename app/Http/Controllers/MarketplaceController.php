@@ -189,14 +189,20 @@ class MarketplaceController extends Controller
             ->with([
                 'tenant.profile',
                 'media' => fn ($query) => $query->orderBy('sort_order'),
-                'reviews' => fn ($query) => $query->with('user:id,name')->latest()->take(20),
             ])
             ->published()
             ->where('slug', $slug)
             ->firstOrFail();
 
+        $reviews = $listing->reviews()
+            ->with('user:id,name')
+            ->latest()
+            ->paginate(5, ['*'], 'reviews_page')
+            ->withQueryString();
+
         return view('marketplace.listing', [
             'listing' => $listing,
+            'reviews' => $reviews,
         ]);
     }
 

@@ -5,7 +5,6 @@
         $location = trim(($listing->city ? $listing->city.', ' : '').($listing->country ?? ''), ', ');
         $reviewCount = (int) ($listing->rating_count ?? 0);
         $ratingAverage = round((float) ($listing->rating_average ?? 0), 1);
-        $reviews = $listing->reviews;
     @endphp
 
     <section class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -124,7 +123,7 @@
                         </x-card>
                     </div>
 
-                    <x-card title="Customer Reviews">
+                    <x-card title="Customer Reviews" id="customer-reviews">
                         <p class="text-sm text-primary/75">
                             Rating: <span class="font-semibold text-primary">{{ number_format($ratingAverage, 1) }}/5</span>
                             • {{ $reviewCount }} review{{ $reviewCount === 1 ? '' : 's' }}
@@ -146,6 +145,13 @@
                                 <p class="text-sm text-primary/75">No reviews yet for this listing.</p>
                             @endforelse
                         </div>
+                        @if ($reviews->hasMorePages())
+                            <div class="mt-4">
+                                <a href="{{ $reviews->nextPageUrl() }}#customer-reviews" class="fc-btn fc-btn-outline">
+                                    See more reviews
+                                </a>
+                            </div>
+                        @endif
                     </x-card>
                 </div>
             </div>
@@ -203,6 +209,18 @@
                                         </p>
                                     </div>
                                     <div>
+                                        <x-input-label for="service_date" value="Preferred Service Date (optional)" />
+                                        <x-text-input
+                                            id="service_date"
+                                            name="service_date"
+                                            type="date"
+                                            class="mt-1 w-full"
+                                            :value="old('service_date')"
+                                            min="{{ now()->toDateString() }}"
+                                        />
+                                        <p class="mt-1 text-xs text-primary/60">Set this so we can send a reminder before your trip/service date.</p>
+                                    </div>
+                                    <div>
                                         <x-input-label for="special_requests" value="Special Requests (optional)" />
                                         <x-textarea-input
                                             id="special_requests"
@@ -225,7 +243,7 @@
                             <a href="{{ route('login') }}" class="fc-btn fc-btn-secondary w-full text-center">Log in to Book</a>
                         @endauth
                         <a href="{{ route('marketplace.vendor', $listing->tenant->slug) }}" class="fc-btn fc-btn-outline w-full">
-                            View Owner Details
+                            {{ $listing->type === 'tour' ? 'View Tour Operator Details' : 'View Owner Details' }}
                         </a>
                     </div>
                 </x-card>

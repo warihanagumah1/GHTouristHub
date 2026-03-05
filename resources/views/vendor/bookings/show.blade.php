@@ -77,7 +77,16 @@
                         @csrf
                         @method('PUT')
                         <x-select-input name="status" class="w-full">
-                            @foreach (['pending_payment', 'paid', 'confirmed', 'completed', 'cancelled'] as $status)
+                            @php
+                                $allowedStatuses = match ($booking->status) {
+                                    'pending_payment' => ['pending_payment', 'paid', 'cancelled'],
+                                    'paid' => ['paid', 'confirmed', 'completed', 'cancelled'],
+                                    'confirmed' => ['confirmed', 'completed', 'cancelled'],
+                                    'completed' => ['completed'],
+                                    default => ['cancelled'],
+                                };
+                            @endphp
+                            @foreach ($allowedStatuses as $status)
                                 <option value="{{ $status }}" @selected($booking->status === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                             @endforeach
                         </x-select-input>

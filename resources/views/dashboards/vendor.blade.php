@@ -11,11 +11,15 @@
                 <x-alert variant="success">{{ session('status') }}</x-alert>
             @endif
 
-            <div class="grid gap-4 md:grid-cols-5">
+            <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
                 <x-stat-card label="Active Listings" :value="$stats['active_listings']" />
                 <x-stat-card label="Total Bookings" :value="$stats['bookings_total']" />
                 <x-stat-card label="Pending Payments" :value="$stats['pending_bookings']" />
-                <x-stat-card label="Paid Revenue (USD)" :value="'$'.number_format($stats['revenue_paid_usd'], 2)" />
+                <x-stat-card
+                    label="Total Revenue (USD)"
+                    :value="'$'.number_format((float) $stats['operator_total_revenue_usd'], 2)"
+                    :trend="'Yet to be paid to operator: $'.number_format((float) $stats['operator_yet_to_be_paid_usd'], 2)"
+                />
                 <x-stat-card
                     label="Ratings"
                     :value="number_format((float) $stats['average_rating'], 1).'/5'"
@@ -24,10 +28,17 @@
             </div>
 
             <div class="grid gap-4 md:grid-cols-4">
-                <a href="{{ route('vendor.listings.index') }}" class="fc-card hover:border-tertiary/60">
-                    <h3 class="font-semibold text-primary">Manage Listings</h3>
-                    <p class="mt-1 text-sm text-primary/75">Create, edit, publish, and pause tour/utility packages.</p>
-                </a>
+                @if ($tenant->status === 'approved')
+                    <a href="{{ route('vendor.listings.index') }}" class="fc-card hover:border-tertiary/60">
+                        <h3 class="font-semibold text-primary">Manage Listings</h3>
+                        <p class="mt-1 text-sm text-primary/75">Create, edit, publish, and pause tour/utility packages.</p>
+                    </a>
+                @else
+                    <div class="fc-card border-amber-300/60 bg-amber-50/40">
+                        <h3 class="font-semibold text-primary">Manage Listings</h3>
+                        <p class="mt-1 text-sm text-primary/75">Pending admin approval. You can create listings after your account is approved.</p>
+                    </div>
+                @endif
                 <a href="{{ route('vendor.bookings.index') }}" class="fc-card hover:border-tertiary/60">
                     <h3 class="font-semibold text-primary">Manage Bookings</h3>
                     <p class="mt-1 text-sm text-primary/75">Confirm bookings, monitor payment status, and update completion.</p>

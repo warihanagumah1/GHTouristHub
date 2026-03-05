@@ -139,6 +139,7 @@ class BookingController extends Controller
         $validated = $request->validate([
             'travelers_count' => ['required', 'integer', 'min:1', 'max:50'],
             'special_requests' => ['nullable', 'string', 'max:1000'],
+            'service_date' => ['nullable', 'date', 'after_or_equal:today'],
         ]);
 
         $split = app(PayoutService::class)->splitAmount((float) $listing->price_from * (int) $validated['travelers_count']);
@@ -150,6 +151,7 @@ class BookingController extends Controller
             'listing_id' => $listing->id,
             'travelers_count' => $validated['travelers_count'],
             'special_requests' => $validated['special_requests'] ?? null,
+            'service_date' => $validated['service_date'] ?? null,
             'total_amount' => (float) $listing->price_from * (int) $validated['travelers_count'],
             'currency' => strtoupper((string) ($listing->currency_code ?: 'USD')),
             'status' => 'pending_payment',

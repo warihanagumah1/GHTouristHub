@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +37,9 @@ class UserManagementController extends Controller
         }
 
         $users = $query->latest()->paginate(25)->withQueryString();
+        $users->load([
+            'ownedTenants:id,owner_user_id,status,type,name',
+        ]);
 
         $roleCounts = User::query()
             ->selectRaw('user_role, count(*) as total')
@@ -102,5 +106,21 @@ class UserManagementController extends Controller
             : "User {$user->email} has been unblocked.";
 
         return back()->with('status', $message);
+    }
+
+    /**
+     * Update approval status for a vendor tenant account.
+     */
+    public function updateVendorApproval(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:pending,approved,rejected,suspended'],
+        ]);
+
+        $tenant->update([
+            'status' => $validated['status'],
+        ]);
+
+        return back()->with('status', "Vendor approval status for {$tenant->name} updated to {$tenant->status}.");
     }
 }

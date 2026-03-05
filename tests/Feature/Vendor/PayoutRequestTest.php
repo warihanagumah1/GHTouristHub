@@ -77,6 +77,48 @@ class PayoutRequestTest extends TestCase
         $this->assertDatabaseCount('payout_requests', 1);
     }
 
+    public function test_vendor_can_save_preferred_payout_details(): void
+    {
+        [$vendor, $tenant] = $this->makeVendorWithPaidEarnings(300);
+
+        $response = $this->actingAs($vendor)->put(route('vendor.payouts.setup'), [
+            'payout_mode' => 'platform_payouts',
+            'preferred_payout_details' => 'MTN Mobile Money: +233200000000 (Account Name: Payout Tenant)',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('vendor_profiles', [
+            'tenant_id' => $tenant->id,
+            'preferred_payout_details' => 'MTN Mobile Money: +233200000000 (Account Name: Payout Tenant)',
+        ]);
+    }
+
+    public function test_vendor_can_save_structured_manual_payout_details_as_json(): void
+    {
+        [$vendor, $tenant] = $this->makeVendorWithPaidEarnings(300);
+
+        $response = $this->actingAs($vendor)->put(route('vendor.payouts.setup'), [
+            'payout_mode' => 'platform_payouts',
+            'manual_payout_type' => 'mobile_money',
+            'manual_account_name' => 'Payout Tenant',
+            'manual_mobile_provider' => 'MTN',
+            'manual_mobile_number' => '+233200000000',
+            'manual_mobile_account_name' => 'Payout Tenant',
+            'manual_notes' => 'Use MoMo wallet transfer.',
+        ]);
+
+        $response->assertRedirect();
+
+        $stored = (string) optional($tenant->fresh()->profile)->preferred_payout_details;
+        $this->assertNotSame('', $stored);
+
+        $decoded = json_decode($stored, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('mobile_money', $decoded['type'] ?? null);
+        $this->assertSame('Payout Tenant', $decoded['account_name'] ?? null);
+        $this->assertSame('MTN', $decoded['mobile_provider'] ?? null);
+        $this->assertSame('+233200000000', $decoded['mobile_number'] ?? null);
+    }
+
     /**
      * @return array{0: \App\Models\User, 1: \App\Models\Tenant}
      */

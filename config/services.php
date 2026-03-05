@@ -71,4 +71,8 @@ return [
         'url' => env('EXCHANGERATE_API_URL', 'https://v6.exchangerate-api.com/v6'),
     ],
 
+    'support' => [
+        'admin_email' => env('SUPPORT_ADMIN_EMAIL', 'support@ghtouristhub.com'),
+    ],
+
 ];

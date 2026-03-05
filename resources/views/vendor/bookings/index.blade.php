@@ -8,6 +8,9 @@
             @if (session('status'))
                 <x-alert variant="success" class="mb-4">{{ session('status') }}</x-alert>
             @endif
+            @if ($errors->any())
+                <x-alert variant="danger" class="mb-4">{{ $errors->first() }}</x-alert>
+            @endif
 
             <x-card>
                 <div class="overflow-x-auto">
@@ -40,7 +43,16 @@
                                             @csrf
                                             @method('PUT')
                                             <x-select-input name="status" class="w-40 text-xs">
-                                                @foreach (['pending_payment', 'paid', 'confirmed', 'completed', 'cancelled'] as $status)
+                                                @php
+                                                    $allowedStatuses = match ($booking->status) {
+                                                        'pending_payment' => ['pending_payment', 'paid', 'cancelled'],
+                                                        'paid' => ['paid', 'confirmed', 'completed', 'cancelled'],
+                                                        'confirmed' => ['confirmed', 'completed', 'cancelled'],
+                                                        'completed' => ['completed'],
+                                                        default => ['cancelled'],
+                                                    };
+                                                @endphp
+                                                @foreach ($allowedStatuses as $status)
                                                     <option value="{{ $status }}" @selected($booking->status === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                                                 @endforeach
                                             </x-select-input>

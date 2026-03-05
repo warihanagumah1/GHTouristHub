@@ -7,9 +7,12 @@ use App\Models\Booking;
 use App\Models\User;
 use App\Notifications\BookingStatusUpdatedNotification;
 use App\Services\PayoutService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class StripeCheckoutController extends Controller
 {
@@ -25,7 +28,7 @@ class StripeCheckoutController extends Controller
             return redirect()->route('client.bookings.show', $booking)->with('status', 'This booking is already paid or closed.');
         }
 
-        $secret = (string) config('services.stripe.secret');
+        $secret = trim((string) config('services.stripe.secret'));
 
         if ($secret === '') {
             // Local fallback when Stripe credentials are not configured.
@@ -47,6 +50,19 @@ class StripeCheckoutController extends Controller
         $successUrl = route('client.bookings.stripe.success', $booking).'?session_id={CHECKOUT_SESSION_ID}';
         $cancelUrl = route('client.bookings.show', $booking);
         $grossCents = (int) round((float) $booking->total_amount * 100);
+        $currency = strtolower(trim((string) $booking->currency));
+
+        if ($grossCents < 1) {
+            return redirect()->route('client.bookings.show', $booking)->withErrors([
+                'payment' => 'Invalid booking amount. Please contact support.',
+            ]);
+        }
+
+        if (! preg_match('/^[a-z]{3}$/', $currency)) {
+            return redirect()->route('client.bookings.show', $booking)->withErrors([
+                'payment' => 'Invalid booking currency. Please contact support.',
+            ]);
+        }
 
         /** @var PayoutService $payoutService */
         $payoutService = app(PayoutService::class);
@@ -62,8 +78,12 @@ class StripeCheckoutController extends Controller
             'mode' => 'payment',
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
-            'line_items[0][price_data][currency]' => strtolower($booking->currency),
-            'line_items[0][price_data][product_data][name]' => $booking->listing->title,
+            'line_items[0][price_data][currency]' => $currency,
+            'line_items[0][price_data][product_data][name]' => Str::limit(
+                (string) ($booking->listing->title ?: "Booking {$booking->booking_no}"),
+                120,
+                ''
+            ),
             'line_items[0][price_data][unit_amount]' => $grossCents,
             'line_items[0][quantity]' => 1,
             'metadata[booking_id]' => $booking->id,
@@ -75,18 +95,61 @@ class StripeCheckoutController extends Controller
             $payload['payment_intent_data[transfer_data][destination]'] = (string) $profile->stripe_connect_account_id;
         }
 
-        $response = Http::withBasicAuth($secret, '')
-            ->asForm()
-            ->post('https://api.stripe.com/v1/checkout/sessions', $payload);
+        try {
+            $response = Http::withBasicAuth($secret, '')
+                ->asForm()
+                ->timeout(20)
+                ->post('https://api.stripe.com/v1/checkout/sessions', $payload);
+        } catch (ConnectionException $exception) {
+            Log::error('Stripe checkout session request failed to connect.', [
+                'booking_id' => $booking->id,
+                'booking_no' => $booking->booking_no,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return redirect()->route('client.bookings.show', $booking)->withErrors([
+                'payment' => 'Unable to reach Stripe right now. Please try again.',
+            ]);
+        }
 
         if (! $response->successful()) {
+            $stripeErrorMessage = trim((string) $response->json('error.message'));
+            $stripeErrorCode = trim((string) $response->json('error.code'));
+
+            Log::warning('Stripe checkout session initialization failed.', [
+                'booking_id' => $booking->id,
+                'booking_no' => $booking->booking_no,
+                'http_status' => $response->status(),
+                'currency' => $currency,
+                'gross_cents' => $grossCents,
+                'stripe_error_code' => $stripeErrorCode,
+                'stripe_error_message' => $stripeErrorMessage,
+                'response_body' => $response->json(),
+            ]);
+
+            $userMessage = $stripeErrorMessage !== ''
+                ? "Stripe error: {$stripeErrorMessage}"
+                : 'Unable to initialize Stripe checkout. Please try again.';
+
             return redirect()->route('client.bookings.show', $booking)->withErrors([
-                'payment' => 'Unable to initialize Stripe checkout. Please try again.',
+                'payment' => $userMessage,
             ]);
         }
 
         $sessionId = (string) $response->json('id');
         $checkoutUrl = (string) $response->json('url');
+
+        if ($sessionId === '' || $checkoutUrl === '') {
+            Log::warning('Stripe checkout session response missing id/url.', [
+                'booking_id' => $booking->id,
+                'booking_no' => $booking->booking_no,
+                'response_body' => $response->json(),
+            ]);
+
+            return redirect()->route('client.bookings.show', $booking)->withErrors([
+                'payment' => 'Stripe returned an incomplete checkout response. Please try again.',
+            ]);
+        }
 
         $booking->update([
             'stripe_checkout_session_id' => $sessionId,
@@ -113,7 +176,7 @@ class StripeCheckoutController extends Controller
         }
 
         $sessionId = (string) $request->query('session_id');
-        $secret = (string) config('services.stripe.secret');
+        $secret = trim((string) config('services.stripe.secret'));
 
         if ($secret === '' || $sessionId === '') {
             return redirect()->route('client.bookings.show', $booking)->withErrors([
@@ -121,12 +184,43 @@ class StripeCheckoutController extends Controller
             ]);
         }
 
-        $response = Http::withBasicAuth($secret, '')
-            ->get("https://api.stripe.com/v1/checkout/sessions/{$sessionId}");
+        try {
+            $response = Http::withBasicAuth($secret, '')
+                ->timeout(20)
+                ->get("https://api.stripe.com/v1/checkout/sessions/{$sessionId}");
+        } catch (ConnectionException $exception) {
+            Log::error('Stripe checkout session verification failed to connect.', [
+                'booking_id' => $booking->id,
+                'booking_no' => $booking->booking_no,
+                'session_id' => $sessionId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return redirect()->route('client.bookings.show', $booking)->withErrors([
+                'payment' => 'Unable to reach Stripe to verify payment. Please try again.',
+            ]);
+        }
 
         if (! $response->successful()) {
+            $stripeErrorMessage = trim((string) $response->json('error.message'));
+            $stripeErrorCode = trim((string) $response->json('error.code'));
+
+            Log::warning('Stripe checkout session verification failed.', [
+                'booking_id' => $booking->id,
+                'booking_no' => $booking->booking_no,
+                'session_id' => $sessionId,
+                'http_status' => $response->status(),
+                'stripe_error_code' => $stripeErrorCode,
+                'stripe_error_message' => $stripeErrorMessage,
+                'response_body' => $response->json(),
+            ]);
+
+            $userMessage = $stripeErrorMessage !== ''
+                ? "Unable to verify Stripe payment status: {$stripeErrorMessage}"
+                : 'Unable to verify Stripe payment status.';
+
             return redirect()->route('client.bookings.show', $booking)->withErrors([
-                'payment' => 'Unable to verify Stripe payment status.',
+                'payment' => $userMessage,
             ]);
         }
 

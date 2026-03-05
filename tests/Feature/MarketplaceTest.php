@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
+use App\Models\Listing;
+use App\Models\TenantReview;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,6 +49,37 @@ class MarketplaceTest extends TestCase
             ->assertSee('Browse Utilities');
     }
 
+    public function test_tourist_attractions_index_page_can_be_rendered(): void
+    {
+        $response = $this->get('/tourist-attractions');
+
+        $response
+            ->assertOk()
+            ->assertSee('Tourist Attractions by Region')
+            ->assertSee('Greater Accra');
+    }
+
+    public function test_tourist_attractions_region_page_can_be_rendered(): void
+    {
+        $response = $this->get('/tourist-attractions/greater-accra');
+
+        $response
+            ->assertOk()
+            ->assertSee('Greater Accra Region Attractions')
+            ->assertSee('Kwame Nkrumah Memorial Park');
+    }
+
+    public function test_tourist_attraction_detail_page_can_be_rendered(): void
+    {
+        $response = $this->get('/tourist-attractions/greater-accra/kwame-nkrumah-memorial-park-greater-accra');
+
+        $response
+            ->assertOk()
+            ->assertSee('Kwame Nkrumah Memorial Park')
+            ->assertSee('Visitor Information')
+            ->assertSee('Travel Tips');
+    }
+
     public function test_listing_page_can_be_rendered_for_known_slug(): void
     {
         $response = $this->get('/listings/accra-cultural-weekend');
@@ -54,7 +89,64 @@ class MarketplaceTest extends TestCase
             ->assertSee('Accra Cultural Weekend')
             ->assertSee('5.0/5 (1 review)')
             ->assertSee('Excellent tour pacing and professional local guide.')
-            ->assertSee('View Owner Details');
+            ->assertSee('View Tour Operator Details')
+            ->assertDontSee('See more reviews');
+    }
+
+    public function test_listing_page_shows_see_more_reviews_when_reviews_exceed_five(): void
+    {
+        $listing = Listing::query()
+            ->where('slug', 'accra-cultural-weekend')
+            ->firstOrFail();
+
+        $clientIds = User::query()
+            ->where('user_role', User::ROLE_CLIENT)
+            ->limit(5)
+            ->pluck('id')
+            ->values();
+
+        if ($clientIds->count() < 5) {
+            $extraClientIds = User::factory()
+                ->count(5 - $clientIds->count())
+                ->create(['user_role' => User::ROLE_CLIENT])
+                ->pluck('id');
+
+            $clientIds = $clientIds->merge($extraClientIds)->values();
+        }
+
+        foreach ($clientIds as $index => $clientId) {
+            $booking = Booking::query()->create([
+                'booking_no' => 'BKG-TST-'.uniqid().'-'.$index,
+                'user_id' => $clientId,
+                'tenant_id' => $listing->tenant_id,
+                'listing_id' => $listing->id,
+                'travelers_count' => 1,
+                'total_amount' => (float) $listing->price_from,
+                'currency' => (string) ($listing->currency_code ?: 'USD'),
+                'status' => 'completed',
+                'paid_at' => now()->subDays($index + 1),
+            ]);
+
+            TenantReview::query()->create([
+                'booking_id' => $booking->id,
+                'tenant_id' => $listing->tenant_id,
+                'listing_id' => $listing->id,
+                'user_id' => $clientId,
+                'rating' => 5,
+                'comment' => 'Extra seeded review '.($index + 1),
+            ]);
+        }
+
+        $listing->update([
+            'rating_count' => (int) $listing->reviews()->count(),
+            'rating_average' => round((float) $listing->reviews()->avg('rating'), 2),
+        ]);
+
+        $response = $this->get('/listings/accra-cultural-weekend');
+
+        $response
+            ->assertOk()
+            ->assertSee('See more reviews');
     }
 
     public function test_vendor_page_can_be_rendered_for_known_vendor_slug(): void

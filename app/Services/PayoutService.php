@@ -46,7 +46,38 @@ class PayoutService
 
     public function tenantAvailableBalanceUsd(Tenant $tenant): float
     {
-        $earnedUsd = Payment::query()
+        $earnedUsd = $this->tenantEarnedBalanceUsd($tenant);
+        $reservedOrPaidUsd = $this->payoutRequestsTotalUsd($tenant, ['pending', 'approved', 'paid']);
+
+        return round(max(0, $earnedUsd - $reservedOrPaidUsd), 2);
+    }
+
+    public function tenantOutstandingBalanceUsd(Tenant $tenant): float
+    {
+        return round(max(0, $this->payoutRequestsTotalUsd($tenant, ['pending', 'approved'])), 2);
+    }
+
+    public function tenantTotalRevenueUsd(Tenant $tenant): float
+    {
+        return round(max(0, $this->tenantEarnedBalanceUsd($tenant)), 2);
+    }
+
+    public function tenantYetToBePaidUsd(Tenant $tenant): float
+    {
+        $totalRevenueUsd = $this->tenantTotalRevenueUsd($tenant);
+        $amountPaidUsd = $this->tenantAmountPaidUsd($tenant);
+
+        return round(max(0, $totalRevenueUsd - $amountPaidUsd), 2);
+    }
+
+    public function tenantAmountPaidUsd(Tenant $tenant): float
+    {
+        return round(max(0, $this->payoutRequestsTotalUsd($tenant, ['paid'])), 2);
+    }
+
+    protected function tenantEarnedBalanceUsd(Tenant $tenant): float
+    {
+        return (float) Payment::query()
             ->where('status', 'paid')
             ->where('transfer_mode', 'platform')
             ->whereHas('booking', fn ($query) => $query->where('tenant_id', $tenant->id))
@@ -55,12 +86,16 @@ class PayoutService
                 (float) $payment->vendor_net_amount,
                 (string) $payment->currency
             ));
+    }
 
-        $reservedOrPaidUsd = $tenant->payoutRequests()
-            ->whereIn('status', ['pending', 'approved', 'paid'])
+    /**
+     * @param  array<int, string>  $statuses
+     */
+    protected function payoutRequestsTotalUsd(Tenant $tenant, array $statuses): float
+    {
+        return (float) $tenant->payoutRequests()
+            ->whereIn('status', $statuses)
             ->get(['amount', 'currency'])
             ->sum(fn ($request) => $this->currencyService->convertToUsd((float) $request->amount, (string) $request->currency));
-
-        return round(max(0, $earnedUsd - $reservedOrPaidUsd), 2);
     }
 }

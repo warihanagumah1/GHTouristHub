@@ -3,10 +3,13 @@
         @php
             $user = auth()->user();
             $createType = in_array($user->user_role, [\App\Models\User::ROLE_UTILITY_OWNER, \App\Models\User::ROLE_UTILITY_STAFF], true) ? 'utility' : 'tour';
+            $isApprovedTenant = $tenant->status === 'approved';
         @endphp
         <div class="flex items-center justify-between gap-4">
             <h2 class="font-semibold text-xl text-primary leading-tight">Manage Listings</h2>
-            <a href="{{ route('vendor.listings.create', ['type' => $createType]) }}" class="fc-btn fc-btn-secondary">Create Listing</a>
+            @if ($isApprovedTenant)
+                <a href="{{ route('vendor.listings.create', ['type' => $createType]) }}" class="fc-btn fc-btn-secondary">Create Listing</a>
+            @endif
         </div>
     </x-slot>
 
@@ -17,6 +20,11 @@
             @endif
             @if (session('warning'))
                 <x-alert variant="warning" class="mb-4">{{ session('warning') }}</x-alert>
+            @endif
+            @if (! $isApprovedTenant)
+                <x-alert variant="warning" class="mb-4">
+                    Your vendor account is <strong>{{ $tenant->status }}</strong>. Admin approval is required before you can create new listings.
+                </x-alert>
             @endif
 
             <x-card>

@@ -402,7 +402,11 @@ class ListingManagementController extends Controller
     protected function approvedTenantFor(User $user): Tenant
     {
         $tenant = $user->primaryTenant();
-        abort_unless($tenant && $tenant->status === 'approved', 403);
+        abort_unless(
+            $tenant && $tenant->status === 'approved',
+            403,
+            'Your account requires admin approval before you can create listings.'
+        );
 
         return $tenant;
     }

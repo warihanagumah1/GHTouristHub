@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
         $password = Hash::make('password');
 
         $this->seedCurrencies();
+        $this->call(TouristAttractionSeeder::class);
 
         $admin = User::factory()->create([
             'name' => 'Admin User',

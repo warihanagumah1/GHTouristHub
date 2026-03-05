@@ -17,6 +17,7 @@
     @php
         $authUser = auth()->user();
         $showBecomeVendor = ! $authUser;
+        $touristRegions = $publicTouristRegions ?? collect();
     @endphp
     <div class="flex min-h-screen flex-col" x-data="{ openMenu: false }">
         <header class="sticky top-0 z-40 border-b border-slate-200 bg-white">
@@ -36,6 +37,24 @@
                         class="text-base font-semibold {{ request()->routeIs('marketplace.tours') ? 'text-primary' : 'text-primary/70 hover:text-primary' }}">Tours</a>
                     <a href="{{ route('marketplace.utilities') }}"
                         class="text-base font-semibold {{ request()->routeIs('marketplace.utilities') ? 'text-primary' : 'text-primary/70 hover:text-primary' }}">Utilities</a>
+                    <div class="group relative">
+                        <a href="{{ route('marketplace.attractions.index') }}"
+                            class="text-base font-semibold {{ request()->routeIs('marketplace.attractions.*') ? 'text-primary' : 'text-primary/70 hover:text-primary' }}">
+                            Tourist Attractions
+                        </a>
+                        @if ($touristRegions->isNotEmpty())
+                            <div class="invisible absolute left-0 top-full z-50 mt-3 w-72 rounded-xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100">
+                                <p class="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-primary/50">Regions</p>
+                                <div class="max-h-80 overflow-y-auto">
+                                    @foreach ($touristRegions as $region)
+                                        <a href="{{ route('marketplace.attractions.region', $region->slug) }}" class="block rounded-lg px-2 py-2 text-sm text-primary/80 hover:bg-slate-50 hover:text-primary">
+                                            {{ $region->name }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                     @if ($showBecomeVendor)
                         <a href="{{ route('register') }}"
                             class="text-base font-semibold text-primary/70 hover:text-primary">Become a Vendor</a>
@@ -76,6 +95,16 @@
                         class="block text-sm font-medium text-primary">Tours</a>
                     <a @click="openMenu=false" href="{{ route('marketplace.utilities') }}"
                         class="block text-sm font-medium text-primary">Utilities</a>
+                    <a @click="openMenu=false" href="{{ route('marketplace.attractions.index') }}"
+                        class="block text-sm font-medium text-primary">Tourist Attractions</a>
+                    @if ($touristRegions->isNotEmpty())
+                        <div class="ms-3 space-y-2 border-l border-slate-200 ps-3">
+                            @foreach ($touristRegions as $region)
+                                <a @click="openMenu=false" href="{{ route('marketplace.attractions.region', $region->slug) }}"
+                                    class="block text-xs font-medium text-primary/80">{{ $region->name }}</a>
+                            @endforeach
+                        </div>
+                    @endif
                     @if ($showBecomeVendor)
                         <a @click="openMenu=false" href="{{ route('register') }}"
                             class="block text-sm font-medium text-primary">Become a Vendor</a>

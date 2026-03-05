@@ -20,6 +20,9 @@ new class extends Component
     $authUser = auth()->user();
     $isVendorUser = $authUser->isVendor();
     $isAdminUser = in_array($authUser->user_role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_ADMIN_STAFF], true);
+    $vendorTenant = $isVendorUser ? $authUser->primaryTenant() : null;
+    $vendorApproved = ! $isVendorUser || (($vendorTenant?->status ?? null) === 'approved');
+    $touristRegions = $publicTouristRegions ?? collect();
     $initial = strtoupper(substr((string) $authUser->name, 0, 1));
 @endphp
 
@@ -46,6 +49,43 @@ new class extends Component
                     <x-nav-link :href="route('marketplace.utilities')" :active="request()->routeIs('marketplace.utilities')" wire:navigate>
                         {{ __('Utilities') }}
                     </x-nav-link>
+                    <div class="relative sm:-my-px sm:flex sm:items-center" x-data="{ openAttractionDesktop: false }">
+                        <div class="flex h-full items-center gap-1">
+                            <x-nav-link :href="route('marketplace.attractions.index')" :active="request()->routeIs('marketplace.attractions.*')" wire:navigate>
+                                {{ __('Tourist Attractions') }}
+                            </x-nav-link>
+                            <button
+                                type="button"
+                                class="inline-flex h-6 w-6 items-center justify-center rounded text-primary/70 hover:bg-slate-100 hover:text-primary"
+                                @click.stop="openAttractionDesktop = !openAttractionDesktop"
+                                @keydown.escape.window="openAttractionDesktop = false"
+                                aria-label="Toggle tourist attraction regions"
+                                :aria-expanded="openAttractionDesktop.toString()"
+                            >
+                                <svg class="h-4 w-4 transition" :class="{ 'rotate-180': openAttractionDesktop }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div
+                            x-cloak
+                            x-show="openAttractionDesktop"
+                            @click.outside="openAttractionDesktop = false"
+                            class="absolute left-0 top-full z-50 mt-3 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
+                        >
+                            <p class="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-primary/50">Regions</p>
+                            <div class="max-h-80 overflow-y-auto">
+                                <a href="{{ route('marketplace.attractions.index') }}" class="block rounded-lg px-2 py-2 text-sm font-semibold text-primary hover:bg-slate-50" wire:navigate>
+                                    All Regions
+                                </a>
+                                @foreach ($touristRegions as $region)
+                                    <a href="{{ route('marketplace.attractions.region', $region->slug) }}" class="block rounded-lg px-2 py-2 text-sm text-primary/80 hover:bg-slate-50 hover:text-primary" wire:navigate>
+                                        {{ $region->name }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -102,11 +142,22 @@ new class extends Component
                                         <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 112 10a8 8 0 0116 0zM8 8a2 2 0 114 0c0 1.5-2 1.25-2 3h-1a3 3 0 013-3 1 1 0 10-1 1H8zM9 14h2v2H9v-2z" clip-rule="evenodd"/></svg>
                                         <span>Support Tickets</span>
                                     </a>
-                                @elseif ($isVendorUser)
-                                    <a href="{{ route('vendor.listings.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
-                                        <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7.414A2 2 0 0017.414 6l-3.414-3.414A2 2 0 0012.586 2H4zm7 1.5V7a1 1 0 001 1h2.5L11 4.5z"/></svg>
-                                        <span>Manage Listings</span>
+                                    <a href="{{ route('admin.attractions.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
+                                        <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 01.894.553l1.382 2.764 3.052.443a1 1 0 01.554 1.706l-2.21 2.154.522 3.04a1 1 0 01-1.451 1.054L10 12.347l-2.743 1.442a1 1 0 01-1.45-1.054l.522-3.04-2.21-2.154a1 1 0 01.554-1.706l3.052-.443L9.106 2.553A1 1 0 0110 2z"/></svg>
+                                        <span>Tourist Attractions</span>
                                     </a>
+                                @elseif ($isVendorUser)
+                                    @if ($vendorApproved)
+                                        <a href="{{ route('vendor.listings.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
+                                            <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7.414A2 2 0 0017.414 6l-3.414-3.414A2 2 0 0012.586 2H4zm7 1.5V7a1 1 0 001 1h2.5L11 4.5z"/></svg>
+                                            <span>Manage Listings</span>
+                                        </a>
+                                    @else
+                                        <div class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/60">
+                                            <svg class="h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l6.451 11.467c.75 1.334-.213 2.984-1.742 2.984H3.548c-1.53 0-2.492-1.65-1.742-2.984L8.257 3.1zM11 14a1 1 0 10-2 0 1 1 0 002 0zm-1-7a1 1 0 00-1 1v3a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                            <span>Listings (Approval Needed)</span>
+                                        </div>
+                                    @endif
                                     <a href="{{ route('vendor.bookings.index') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-base text-primary/90 transition hover:bg-slate-50" wire:navigate>
                                         <svg class="h-5 w-5 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 2v8h12V7H4zm2 2h3v2H6V9z"/></svg>
                                         <span>Bookings</span>
@@ -194,6 +245,27 @@ new class extends Component
                     <span>{{ __('Utilities') }}</span>
                 </span>
             </x-responsive-nav-link>
+            <div x-data="{ openAttractionMobile: false }" class="px-4 py-2">
+                <button type="button" @click="openAttractionMobile = !openAttractionMobile" class="flex w-full items-center justify-between text-sm font-medium text-primary">
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 01.894.553l1.382 2.764 3.052.443a1 1 0 01.554 1.706l-2.21 2.154.522 3.04a1 1 0 01-1.451 1.054L10 12.347l-2.743 1.442a1 1 0 01-1.45-1.054l.522-3.04-2.21-2.154a1 1 0 01.554-1.706l3.052-.443L9.106 2.553A1 1 0 0110 2z"/></svg>
+                        <span>{{ __('Tourist Attractions') }}</span>
+                    </span>
+                    <svg class="h-4 w-4 transition" :class="{ 'rotate-180': openAttractionMobile }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div x-cloak x-show="openAttractionMobile" class="mt-2 ms-5 space-y-1 border-l border-slate-200 ps-3">
+                    <a href="{{ route('marketplace.attractions.index') }}" class="block text-xs font-medium text-primary" wire:navigate>
+                        All Regions
+                    </a>
+                    @foreach ($touristRegions as $region)
+                        <a href="{{ route('marketplace.attractions.region', $region->slug) }}" class="block text-xs font-medium text-primary/80" wire:navigate>
+                            {{ $region->name }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
             @if (auth()->user()->user_role === \App\Models\User::ROLE_CLIENT)
                 <x-responsive-nav-link :href="route('client.bookings.index')" :active="request()->routeIs('client.bookings.*')" wire:navigate>
                     <span class="inline-flex items-center gap-2">
@@ -203,12 +275,16 @@ new class extends Component
                 </x-responsive-nav-link>
             @endif
             @if (auth()->user()->isVendor())
-                <x-responsive-nav-link :href="route('vendor.listings.index')" :active="request()->routeIs('vendor.listings.*')" wire:navigate>
-                    <span class="inline-flex items-center gap-2">
-                        <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7.414A2 2 0 0017.414 6l-3.414-3.414A2 2 0 0012.586 2H4zm7 1.5V7a1 1 0 001 1h2.5L11 4.5z"/></svg>
-                        <span>{{ __('Listings') }}</span>
-                    </span>
-                </x-responsive-nav-link>
+                @if ($vendorApproved)
+                    <x-responsive-nav-link :href="route('vendor.listings.index')" :active="request()->routeIs('vendor.listings.*')" wire:navigate>
+                        <span class="inline-flex items-center gap-2">
+                            <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7.414A2 2 0 0017.414 6l-3.414-3.414A2 2 0 0012.586 2H4zm7 1.5V7a1 1 0 001 1h2.5L11 4.5z"/></svg>
+                            <span>{{ __('Listings') }}</span>
+                        </span>
+                    </x-responsive-nav-link>
+                @else
+                    <div class="px-4 py-2 text-sm text-amber-700">Listings require admin approval.</div>
+                @endif
                 <x-responsive-nav-link :href="route('vendor.payouts.index')" :active="request()->routeIs('vendor.payouts.*')" wire:navigate>
                     <span class="inline-flex items-center gap-2">
                         <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2H2V5zm0 4h16v6a2 2 0 01-2 2H4a2 2 0 01-2-2V9zm4 2a1 1 0 100 2h2a1 1 0 100-2H6z"/></svg>
@@ -294,6 +370,12 @@ new class extends Component
                         <span class="inline-flex items-center gap-2">
                             <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 112 10a8 8 0 0116 0zM8 8a2 2 0 114 0c0 1.5-2 1.25-2 3h-1a3 3 0 013-3 1 1 0 10-1 1H8zM9 14h2v2H9v-2z" clip-rule="evenodd"/></svg>
                             <span>{{ __('Support Tickets') }}</span>
+                        </span>
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.attractions.index')" wire:navigate>
+                        <span class="inline-flex items-center gap-2">
+                            <svg class="h-5 w-5 shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 01.894.553l1.382 2.764 3.052.443a1 1 0 01.554 1.706l-2.21 2.154.522 3.04a1 1 0 01-1.451 1.054L10 12.347l-2.743 1.442a1 1 0 01-1.45-1.054l.522-3.04-2.21-2.154a1 1 0 01.554-1.706l3.052-.443L9.106 2.553A1 1 0 0110 2z"/></svg>
+                            <span>{{ __('Tourist Attractions') }}</span>
                         </span>
                     </x-responsive-nav-link>
                 @endif

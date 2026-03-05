@@ -120,6 +120,28 @@ class ListingManagementTest extends TestCase
         ]);
     }
 
+    public function test_unapproved_vendor_sees_clear_approval_message_on_listings_page(): void
+    {
+        $vendor = User::factory()->create([
+            'user_role' => User::ROLE_TOUR_OWNER,
+            'email_verified_at' => now(),
+        ]);
+
+        Tenant::create([
+            'name' => 'Pending Tenant',
+            'slug' => 'pending-tenant-'.Str::lower(Str::random(5)),
+            'type' => 'tour_company',
+            'status' => 'pending',
+            'owner_user_id' => $vendor->id,
+        ]);
+
+        $response = $this->actingAs($vendor)->get(route('vendor.listings.index'));
+
+        $response->assertOk();
+        $response->assertSee('Admin approval is required before you can create new listings.');
+        $response->assertDontSee('Create Listing');
+    }
+
     public function test_vendor_can_create_listing_with_uploaded_images(): void
     {
         Storage::fake('public');

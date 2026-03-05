@@ -22,7 +22,7 @@ class PayoutManagementController extends Controller
     public function index(Request $request): View
     {
         $query = PayoutRequest::query()
-            ->with(['tenant', 'requester', 'processor']);
+            ->with(['tenant.profile', 'requester', 'processor']);
 
         if ($request->filled('status')) {
             $query->where('status', (string) $request->query('status'));

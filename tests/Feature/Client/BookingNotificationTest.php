@@ -49,6 +49,26 @@ class BookingNotificationTest extends TestCase
         Notification::assertSentTo($client, BookingStatusUpdatedNotification::class);
     }
 
+    public function test_vendor_cannot_revert_paid_booking_to_pending_payment(): void
+    {
+        Notification::fake();
+        [$client, $vendor, $listing] = $this->makeClientVendorAndListing();
+        $booking = $this->makeBooking($client, $listing, 'paid');
+
+        $response = $this->actingAs($vendor)
+            ->from(route('vendor.bookings.index'))
+            ->put(route('vendor.bookings.status', $booking), [
+                'status' => 'pending_payment',
+            ]);
+
+        $response->assertRedirect(route('vendor.bookings.index'));
+        $response->assertSessionHasErrors('status');
+        $this->assertDatabaseHas('bookings', [
+            'id' => $booking->id,
+            'status' => 'paid',
+        ]);
+    }
+
     public function test_client_message_notifies_vendor_and_vendor_message_notifies_client(): void
     {
         Notification::fake();

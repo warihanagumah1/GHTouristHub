@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Vendor;
 
 use App\Http\Controllers\Controller;
-use App\Services\CurrencyService;
+use App\Services\PayoutService;
 use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
@@ -11,7 +11,7 @@ class DashboardController extends Controller
     /**
      * Show vendor analytics dashboard.
      */
-    public function __invoke(CurrencyService $currencyService): View
+    public function __invoke(PayoutService $payoutService): View
     {
         $user = request()->user();
         $tenant = $user->primaryTenant();
@@ -22,8 +22,6 @@ class DashboardController extends Controller
 
         $bookings = $tenant->bookings()->with(['listing', 'user', 'payments'])->latest()->take(10)->get();
 
-        $paidBookings = $tenant->bookings()->whereIn('status', ['paid', 'confirmed', 'completed'])->get(['total_amount', 'currency']);
-        $revenueUsd = $paidBookings->sum(fn ($booking) => $currencyService->convertToUsd((float) $booking->total_amount, (string) $booking->currency));
         $totalReviews = (int) $tenant->reviews()->count();
         $averageRating = round((float) ($tenant->reviews()->avg('rating') ?? 0), 1);
 
@@ -31,7 +29,8 @@ class DashboardController extends Controller
             'active_listings' => $tenant->listings()->where('status', 'published')->count(),
             'bookings_total' => $tenant->bookings()->count(),
             'pending_bookings' => $tenant->bookings()->where('status', 'pending_payment')->count(),
-            'revenue_paid_usd' => $revenueUsd,
+            'operator_total_revenue_usd' => $payoutService->tenantTotalRevenueUsd($tenant),
+            'operator_yet_to_be_paid_usd' => $payoutService->tenantYetToBePaidUsd($tenant),
             'total_reviews' => $totalReviews,
             'average_rating' => $averageRating,
         ];
