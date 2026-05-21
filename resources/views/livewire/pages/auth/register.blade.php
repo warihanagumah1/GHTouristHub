@@ -20,7 +20,7 @@ new #[Layout('layouts.guest')] class extends Component
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
-    public string $account_type = 'client';
+    public string $account_type = '';
 
     /**
      * Handle an incoming registration request.
@@ -160,6 +160,7 @@ new #[Layout('layouts.guest')] class extends Component
         <div class="mt-4">
             <x-input-label for="account_type" :value="__('Account Type')" />
             <x-select-input wire:model="account_type" id="account_type" name="account_type" class="mt-1 block w-full">
+                <option value="">Select account type</option>
                 <option value="client">Traveler / Client</option>
                 <option value="tour_company_owner">Tour Company Owner</option>
                 <option value="utility_owner">Utility Owner (Hotel/Transport/Attraction)</option>

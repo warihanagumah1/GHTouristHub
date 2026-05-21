@@ -25,9 +25,11 @@ class SocialAuthController extends Controller
     {
         $this->assertSupportedProvider($provider);
 
+        $requestedAccountType = request()->query('account_type');
+
         request()->session()->put(
             'social_auth.account_type',
-            $this->normalizeAccountType((string) request()->query('account_type', User::ROLE_CLIENT))
+            is_string($requestedAccountType) ? $this->normalizeAccountType($requestedAccountType) : null
         );
 
         $driver = $this->socialDriver($provider);
@@ -48,7 +50,8 @@ class SocialAuthController extends Controller
     {
         $this->assertSupportedProvider($provider);
 
-        $selectedAccountType = $this->normalizeAccountType((string) request()->session()->pull('social_auth.account_type', User::ROLE_CLIENT));
+        $selectedAccountType = request()->session()->pull('social_auth.account_type');
+        $selectedAccountType = is_string($selectedAccountType) ? $this->normalizeAccountType($selectedAccountType) : null;
         $socialUser = $this->socialDriver($provider)->user();
 
         $email = $socialUser->getEmail();
@@ -63,6 +66,13 @@ class SocialAuthController extends Controller
             ->first();
 
         if (! $user) {
+            if ($selectedAccountType === null) {
+                return redirect()->route('register')->with(
+                    'status',
+                    'Select an account type before continuing with social signup.'
+                );
+            }
+
             $fallbackEmail = sprintf('%s@%s.social', $socialUser->getId(), $provider);
             $userRole = $this->roleForAccountType($selectedAccountType);
 
@@ -133,11 +143,11 @@ class SocialAuthController extends Controller
         return route('social.callback', ['provider' => $provider], true);
     }
 
-    protected function normalizeAccountType(string $accountType): string
+    protected function normalizeAccountType(string $accountType): ?string
     {
         return in_array($accountType, [User::ROLE_CLIENT, User::ROLE_TOUR_OWNER, User::ROLE_UTILITY_OWNER], true)
             ? $accountType
-            : User::ROLE_CLIENT;
+            : null;
     }
 
     protected function roleForAccountType(string $accountType): string
