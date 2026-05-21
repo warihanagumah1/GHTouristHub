@@ -124,15 +124,19 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="mb-5 space-y-3">
         <x-social-auth-button
             provider="google"
-            :href="route('social.redirect', ['provider' => 'google', 'flow' => 'register', 'account_type' => $account_type])"
+            :href="$account_type === '' ? route('register') : route('social.redirect', ['provider' => 'google', 'flow' => 'register', 'account_type' => $account_type])"
             label="Continue with Google"
+            @class(['opacity-50 pointer-events-none cursor-not-allowed' => $account_type === ''])
         />
         <x-social-auth-button
             provider="linkedin"
-            :href="route('social.redirect', ['provider' => 'linkedin', 'flow' => 'register', 'account_type' => $account_type])"
+            :href="$account_type === '' ? route('register') : route('social.redirect', ['provider' => 'linkedin', 'flow' => 'register', 'account_type' => $account_type])"
             label="Continue with LinkedIn"
+            @class(['opacity-50 pointer-events-none cursor-not-allowed' => $account_type === ''])
         />
-        <p class="text-xs text-primary/65">Social signup uses the selected account type below.</p>
+        <p class="text-xs text-primary/65">
+            Select account type first to enable social signup.
+        </p>
     </div>
 
     <div class="mb-5 flex items-center gap-3 text-xs uppercase tracking-wider text-primary/50">
@@ -159,7 +163,7 @@ new #[Layout('layouts.guest')] class extends Component
         <!-- Account Type -->
         <div class="mt-4">
             <x-input-label for="account_type" :value="__('Account Type')" />
-            <x-select-input wire:model="account_type" id="account_type" name="account_type" class="mt-1 block w-full">
+            <x-select-input wire:model.live="account_type" id="account_type" name="account_type" class="mt-1 block w-full">
                 <option value="">Select account type</option>
                 <option value="client">Traveler / Client</option>
                 <option value="tour_company_owner">Tour Company Owner</option>
