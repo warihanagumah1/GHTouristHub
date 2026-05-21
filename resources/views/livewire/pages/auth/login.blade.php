@@ -37,12 +37,12 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="mb-5 space-y-3">
         <x-social-auth-button
             provider="google"
-            :href="route('social.redirect', ['provider' => 'google'])"
+            :href="route('social.redirect', ['provider' => 'google', 'flow' => 'login'])"
             label="Continue with Google"
         />
         <x-social-auth-button
             provider="linkedin"
-            :href="route('social.redirect', ['provider' => 'linkedin'])"
+            :href="route('social.redirect', ['provider' => 'linkedin', 'flow' => 'login'])"
             label="Continue with LinkedIn"
         />
     </div>

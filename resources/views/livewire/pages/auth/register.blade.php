@@ -124,12 +124,12 @@ new #[Layout('layouts.guest')] class extends Component
     <div class="mb-5 space-y-3">
         <x-social-auth-button
             provider="google"
-            :href="route('social.redirect', ['provider' => 'google', 'account_type' => $account_type])"
+            :href="route('social.redirect', ['provider' => 'google', 'flow' => 'register', 'account_type' => $account_type])"
             label="Continue with Google"
         />
         <x-social-auth-button
             provider="linkedin"
-            :href="route('social.redirect', ['provider' => 'linkedin', 'account_type' => $account_type])"
+            :href="route('social.redirect', ['provider' => 'linkedin', 'flow' => 'register', 'account_type' => $account_type])"
             label="Continue with LinkedIn"
         />
         <p class="text-xs text-primary/65">Social signup uses the selected account type below.</p>

@@ -24,12 +24,20 @@ class SocialAuthController extends Controller
     public function redirect(string $provider): RedirectResponse
     {
         $this->assertSupportedProvider($provider);
+        $flow = $this->normalizeFlow((string) request()->query('flow', 'login'));
 
         $requestedAccountType = request()->query('account_type');
 
         request()->session()->put(
+            'social_auth.flow',
+            $flow
+        );
+
+        request()->session()->put(
             'social_auth.account_type',
-            is_string($requestedAccountType) ? $this->normalizeAccountType($requestedAccountType) : null
+            $flow === 'register' && is_string($requestedAccountType)
+                ? $this->normalizeAccountType($requestedAccountType)
+                : null
         );
 
         $driver = $this->socialDriver($provider);
@@ -50,6 +58,7 @@ class SocialAuthController extends Controller
     {
         $this->assertSupportedProvider($provider);
 
+        $flow = $this->normalizeFlow((string) request()->session()->pull('social_auth.flow', 'login'));
         $selectedAccountType = request()->session()->pull('social_auth.account_type');
         $selectedAccountType = is_string($selectedAccountType) ? $this->normalizeAccountType($selectedAccountType) : null;
         $socialUser = $this->socialDriver($provider)->user();
@@ -66,7 +75,7 @@ class SocialAuthController extends Controller
             ->first();
 
         if (! $user) {
-            if ($selectedAccountType === null) {
+            if ($flow === 'register' && $selectedAccountType === null) {
                 return redirect()->route('register')->with(
                     'status',
                     'Select an account type before continuing with social signup.'
@@ -74,7 +83,9 @@ class SocialAuthController extends Controller
             }
 
             $fallbackEmail = sprintf('%s@%s.social', $socialUser->getId(), $provider);
-            $userRole = $this->roleForAccountType($selectedAccountType);
+            $userRole = $selectedAccountType !== null
+                ? $this->roleForAccountType($selectedAccountType)
+                : User::ROLE_CLIENT;
 
             $user = User::create([
                 'name' => $socialUser->getName() ?: $socialUser->getNickname() ?: 'Traveler '.Str::upper(Str::random(4)),
@@ -148,6 +159,11 @@ class SocialAuthController extends Controller
         return in_array($accountType, [User::ROLE_CLIENT, User::ROLE_TOUR_OWNER, User::ROLE_UTILITY_OWNER], true)
             ? $accountType
             : null;
+    }
+
+    protected function normalizeFlow(string $flow): string
+    {
+        return in_array($flow, ['login', 'register'], true) ? $flow : 'login';
     }
 
     protected function roleForAccountType(string $accountType): string
