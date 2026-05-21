@@ -119,6 +119,10 @@ class SocialAuthController extends Controller
 
         request()->session()->regenerate();
 
+        if ($flow === 'register') {
+            return redirect()->route($user->dashboardRoute());
+        }
+
         return redirect()->intended(route($user->dashboardRoute(), absolute: false));
     }
 
