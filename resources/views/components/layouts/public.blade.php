@@ -88,6 +88,10 @@
                     @auth
                     <a href="{{ route(auth()->user()->dashboardRoute()) }}"
                         class="fc-btn fc-btn-outline rounded-full">Dashboard</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="fc-btn fc-btn-secondary rounded-full px-5 py-2.5 text-[15px] font-semibold">Sign Out</button>
+                    </form>
                     @else
                     <a href="{{ route('login') }}" class="fc-btn fc-btn-outline rounded-full px-5 py-2.5 text-[15px] font-semibold">Log in</a>
                     <a href="{{ route('register') }}" class="fc-btn fc-btn-secondary rounded-full px-5 py-2.5 text-[15px] font-semibold">Get started <span aria-hidden="true">&rarr;</span></a>
@@ -140,7 +144,11 @@
                     <div class="pt-2">
                         @auth
                         <a @click="openMenu=false" href="{{ route(auth()->user()->dashboardRoute()) }}"
-                            class="fc-btn fc-btn-outline w-full">Dashboard</a>
+                            class="fc-btn fc-btn-outline mb-2 w-full">Dashboard</a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="fc-btn fc-btn-secondary w-full">Sign Out</button>
+                        </form>
                         @else
                         <a @click="openMenu=false" href="{{ route('login') }}"
                             class="fc-btn fc-btn-outline mb-2 w-full px-5 py-2.5 text-[15px] font-semibold">Log in</a>
