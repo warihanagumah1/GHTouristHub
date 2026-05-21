@@ -128,12 +128,6 @@ new #[Layout('layouts.guest')] class extends Component
             label="Continue with Google"
             @class(['opacity-50 pointer-events-none cursor-not-allowed' => $account_type === ''])
         />
-        <x-social-auth-button
-            provider="linkedin"
-            :href="$account_type === '' ? route('register') : route('social.redirect', ['provider' => 'linkedin', 'flow' => 'register', 'account_type' => $account_type])"
-            label="Continue with LinkedIn"
-            @class(['opacity-50 pointer-events-none cursor-not-allowed' => $account_type === ''])
-        />
         <p class="text-xs text-primary/65">
             Select account type first to enable social signup.
         </p>
